@@ -28,7 +28,7 @@ ejecución del proyecto.
 
 Uso de React Native
 
-Dentro de la carpeta deseada paraalojar el proyecto se ejecuta el
+Dentro de la carpeta deseada para alojar el proyecto se ejecuta el
 comando:
 
 *npx* *@react-native-community/cliinit* *HolaMundo*
@@ -45,7 +45,7 @@ Ejecutar en Android
 
 *npx* *react-native* *run-android*
 
-Esto compilará e instalará laapp en el emulador/dispositivo.
+Esto compilará e instalará la app en el emulador/dispositivo.
 
 Posibles errores comunes
 
