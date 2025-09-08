@@ -1,4 +1,4 @@
-**React** **Native** **Hola** **Mundo** **(Android)**
+**React** **Native** **Aplicación** **(Android)**
 
 Requisitos previos
 
