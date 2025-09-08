@@ -54,14 +54,14 @@ Posibles errores comunes
 >
 > *npm* *install* *--save-dev* *@types/react* *@types/react-native*
 >
-> O quitando la anotación: JSX.Elementen el componente.
+> O quitando la anotación: JSX.Element en el componente.
 >
 > • **Error:** **adbno** **se** **reconoce** **como** **un** **comando**
 >
 > Agregaplatform-toolsdel SDK de Android a tu PATH. • **Error:** **SDK**
 > **location** **not** **found**
 >
-> Configura la ruta del SDKen Android Studio(File \> Settings \>
+> Configura la ruta del SDK en Android Studio(File \> Settings \>
 > Appearance & Behavior \> System Settings \> Android SDK).
 
 Para obtener más información sobre React Native, consulte los siguientes recursos:
