@@ -1,6 +1,8 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+apply plugin: 'com.google.gms.google-services'
+apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -116,4 +118,11 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // Importa la lista de materiales (BoM) de Firebase
+    implementation platform('com.google.firebase:firebase-bom:34.2.0')
+
+    // Añade la dependencia para Firebase Authentication (sin especificar versión)
+    // Esto es necesario para que el login y registro funcionen.
+    implementation 'com.google.firebase:firebase-auth'
 }

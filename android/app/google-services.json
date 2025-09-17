@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "919090861349",
+    "project_id": "dailytrack-c1844",
+    "storage_bucket": "dailytrack-c1844.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:919090861349:android:cdc91fefe6ada4248136cc",
+        "android_client_info": {
+          "package_name": "com.dailytrack"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "919090861349-0fd8gtg71kbhvkb44q8asps91u7nchph.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsDGK5naCeYohaHGAn_HSs7o1HHR1QeXw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "919090861349-0fd8gtg71kbhvkb44q8asps91u7nchph.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
