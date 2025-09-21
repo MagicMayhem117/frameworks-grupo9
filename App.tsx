@@ -1,88 +1,54 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import auth from '@react-native-firebase/auth';
+
+import LoginScreen from './src/screens/LoginScreen';
+import RegisterScreen from './src/screens/RegisterScreen';
+import HomeScreen from './src/screens/HomeScreen'; // Crearemos esta pantalla enseguida
+
+// En App.tsx, después de las importaciones
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+
+GoogleSignin.configure({
+  webClientId: '919090861349-0fd8gtg71kbhvkb44q8asps91u7nchph.apps.googleusercontent.com',
+});
+
+const Stack = createNativeStackNavigator();
 
 const App = () => {
-    return (
-        <ScrollView contentContainerStyle={styles.container}>
-            {/* Título principal */}
-            <View style={styles.section}>
-                <Text style={styles.mainTitle}>⚛️ React Native ⚛️</Text>
-            </View>
-            
-            {/* Nombres del equipo */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>👥 Equipo 9</Text>
-                <View style={styles.listContainer}>
-                    <Text style={styles.listItem}>1. Lopez Zavala Jesus Enrique</Text>
-                    <Text style={styles.listItem}>2. Martell Rodríguez Diego</Text>
-                    <Text style={styles.listItem}>3. Barrios Martínez Alejandro</Text>
-                    <Text style={styles.listItem}>4. Dwyer Morris Mateo David</Text>
-                </View>
-            </View>
-            
-            {/* Sección de descripción */}
-            <View style={styles.section}>
-                <Text style={styles.sectionTitle}>📝 Descripción</Text>
-                <Text style={styles.description}>
-                    Esta es una aplicación de ejemplo creada con React Native. 
-                    Muestra cómo organizar diferentes secciones en una interfaz 
-                    limpia y atractiva, con texto centrado y elementos visuales modernos.
-                </Text>
-            </View>
-        </ScrollView>
-    );
-};
+  const [initializing, setInitializing] = useState(true);
+  const [user, setUser] = useState();
 
-const styles = StyleSheet.create({
-    container: {
-        flexGrow: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#f5f5f5',
-        padding: 20,
-    },
-    section: {
-        width: '100%',
-        backgroundColor: 'white',
-        borderRadius: 12,
-        padding: 20,
-        marginBottom: 25,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    mainTitle: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        color: '#2c3e50',
-        textAlign: 'center',
-        marginBottom: 10,
-    },
-    sectionTitle: {
-        fontSize: 24,
-        fontWeight: '600',
-        color: '#3498db',
-        marginBottom: 15,
-        textAlign: 'center',
-    },
-    listContainer: {
-        width: '100%',
-    },
-    listItem: {
-        fontSize: 18,
-        paddingVertical: 8,
-        paddingHorizontal: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-    },
-    description: {
-        fontSize: 16,
-        lineHeight: 22,
-        color: '#555',
-        textAlign: 'justify',
-    },
-});
+  // Manejador para los cambios de estado de autenticación
+  function onAuthStateChanged(user) {
+    setUser(user);
+    if (initializing) setInitializing(false);
+  }
+
+  useEffect(() => {
+    const subscriber = auth().onAuthStateChanged(onAuthStateChanged);
+    return subscriber; // Se desuscribe al desmontar
+  }, []);
+
+  if (initializing) return null; // O un componente de carga
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+        {user ? (
+          // Si el usuario ha iniciado sesión, muestra la pantalla principal
+          <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Mis Hábitos' }} />
+        ) : (
+          // Si no, muestra las pantallas de autenticación
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+};
 
 export default App;
