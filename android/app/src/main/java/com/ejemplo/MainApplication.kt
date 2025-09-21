@@ -1,4 +1,4 @@
-package com.DailyTrack
+package com.ejemplo
 
 import android.app.Application
 import com.facebook.react.PackageList
