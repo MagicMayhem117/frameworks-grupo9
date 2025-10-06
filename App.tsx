@@ -37,11 +37,13 @@ const App = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator>
-        {user ? (
-          // Si el usuario ha iniciado sesión, muestra la pantalla principal
-          <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Mis Hábitos' }} />
-          <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Perfil' }} />
-        ) : (
+       {user ? (
+
+         <>
+           <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Mis Hábitos' }} />
+           <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Mi Perfil' }} />
+         </>
+       ) : (
           // Si no, muestra las pantallas de autenticación
           <>
             <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
