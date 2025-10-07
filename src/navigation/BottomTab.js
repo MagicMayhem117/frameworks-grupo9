@@ -14,8 +14,8 @@ export const BottomTab = () =>{
               <Tab.Screen name="Comunidad" component={ComunityScreen} />
               <Tab.Screen name="Home" component={HomeScreen} />
               <Tab.Screen name="Agregar" component={CrateHabitScreen} />
-              <Tab.Screen name="Settings" component={SettingsScreen} />
               <Tab.Screen name="Stats" component={StatsScreen} />
+              <Tab.Screen name="Settings" component={SettingsScreen} />
         </Tab.Navigator>
     );
 }
