@@ -5,7 +5,7 @@ import auth from '@react-native-firebase/auth';
 const HomeScreen = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>¡Bienvenido a DailyTrack! desde el Main</Text>
+      <Text style={styles.title}>¡Bienvenido a DailyTrack! desde Stats</Text>
       <Text>Aquí verás tus hábitos.</Text>
       <Button title="Cerrar Sesión" onPress={() => auth().signOut()} />
     </View>

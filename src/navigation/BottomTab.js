@@ -10,10 +10,11 @@ const Tab = createBottomTabNavigator();
 export const BottomTab = () =>{
     return(
         <Tab.Navigator>
+              <Tab.Screen name="Comunidad" component={ComunityScreen} />
               <Tab.Screen name="Home" component={HomeScreen} />
-              <Tab.Screen name="Settings" component={SettingsScreen} />
-              <Tab.Screen name="Main" component={MainScreen} />
               <Tab.Screen name="Agregar" component={CrateHabitScreen} />
+              <Tab.Screen name="Settings" component={SettingsScreen} />
+              <Tab.Screen name="Stats" component={StatsScreen} />
         </Tab.Navigator>
     );
 }
