@@ -2,11 +2,12 @@ import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
 import auth from '@react-native-firebase/auth';
 
-const HomeScreen = () => {
+const HomeScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>¡Bienvenido a DailyTrack!</Text>
       <Text>Aquí verás tus hábitos.</Text>
+      <Button title="Ver Racha" onPress={() => navigation.navigate('Racha')} />
       <Button title="Cerrar Sesión" onPress={() => auth().signOut()} />
     </View>
   );
