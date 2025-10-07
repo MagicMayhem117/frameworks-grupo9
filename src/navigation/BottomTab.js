@@ -1,9 +1,10 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
-import MainScreen from '../screens/MainScreen';
+import StatsScreen from '../screens/StatsScreen';
 import HomeScreen from '../screens/HomeScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import CrateHabitScreen from '../screens/CrateHabitScreen';
+import ComunityScreen from '../screens/ComunityScreen';
 
 const Tab = createBottomTabNavigator();
 
