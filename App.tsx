@@ -6,7 +6,6 @@ import auth, {FirebaseAuthTypes} from '@react-native-firebase/auth';
 
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
-import MainScreen from './src/screens/MainScreen';
 
 // En App.tsx, después de las importaciones
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -37,7 +36,18 @@ const App = () => {
 
   return (
     <NavigationContainer>
-      <BottomTab />
+      <Stack.Navigator>
+        {user ? (
+          // Si el usuario ha iniciado sesión, muestra la BottomTab
+          <Stack.Screen name="BottomTab" component={BottomTab} options={{ headerShown: false }} />
+        ) : (
+          // Si no, muestra las pantallas de autenticación
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
+          </>
+        )}
+      </Stack.Navigator>
     </NavigationContainer>
   );
 };
