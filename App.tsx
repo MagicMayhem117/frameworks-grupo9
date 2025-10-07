@@ -6,6 +6,8 @@ import auth, {FirebaseAuthTypes} from '@react-native-firebase/auth';
 
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
+import EditProfileScreen from './src/screens/EditProfileScreen';
+
 
 // En App.tsx, después de las importaciones
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -47,6 +49,7 @@ const App = () => {
             <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
           </>
         )}
+         <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
