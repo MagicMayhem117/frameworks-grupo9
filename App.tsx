@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { BottomTab} from './src/navigation/BottomTab';
 import auth, {FirebaseAuthTypes} from '@react-native-firebase/auth';
 
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
+import EditProfileScreen from './src/screens/EditProfileScreen';
+
 import HomeScreen from './src/screens/HomeScreen'; // Crearemos esta pantalla enseguida
 import ProfileScreen from './screens/ProfileScreen'; // Perfil
 
@@ -34,6 +37,7 @@ const App = () => {
 
   if (initializing) return null; // O un componente de carga
 
+
   return (
     <NavigationContainer>
       <Stack.Navigator>
@@ -50,6 +54,7 @@ const App = () => {
             <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
           </>
         )}
+         <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
