@@ -12,6 +12,10 @@ import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import MiLogoSVG from '../assets/LogoProvisional.svg'; // Asegúrate de que la ruta sea correcta
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
+import firebaseConfig from "../keys.js";
+import { useUser} from "../context/UserContext";
 
 // Función para el inicio de sesión con Google
 async function onGoogleButtonPress() {
@@ -32,6 +36,7 @@ async function onGoogleButtonPress() {
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const { setStateEmail } = useUser();
 
   const handleLogin = async () => {
     if (email.length === 0 || password.length === 0) {
@@ -40,6 +45,7 @@ const LoginScreen = ({ navigation }) => {
     }
     try {
       await auth().signInWithEmailAndPassword(email, password);
+      setStateEmail(email);
     } catch (error) {
       Alert.alert('Error', 'Credenciales incorrectas. Por favor, inténtalo de nuevo.');
     }

@@ -12,6 +12,9 @@ import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import MiLogoSVG from '../assets/LogoProvisional.svg'; // Asegúrate de que la ruta sea correcta
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, setDoc, collection, addDoc } from "firebase/firestore";
+import firebaseConfig from "../keys.js";
 
 // La misma función de Google funciona para registrarse o iniciar sesión
 async function onGoogleButtonPress() {
@@ -33,6 +36,13 @@ const RegisterScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [verifyPassword, setVerifyPassword] = useState('');
 
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+
+
+  // Initialize Cloud Firestore and get a reference to the service
+  const db = getFirestore(app);
+
   const handleRegister = async () => {
     if (!nombre || !email || !password || !verifyPassword) {
       Alert.alert('Error', 'Por favor, llena todos los campos.');
@@ -49,6 +59,11 @@ const RegisterScreen = ({ navigation }) => {
         displayName: nombre,
       });
       Alert.alert('¡Éxito!', 'Usuario registrado correctamente.');
+      await addDoc(collection(db, "Usuarios"), {
+        nombre: nombre,
+        correo: email,
+        racha: 0
+      });
     } catch (error) {
       if (error.code === 'auth/email-already-in-use') {
         Alert.alert('Error', 'Ese correo electrónico ya está en uso.');
