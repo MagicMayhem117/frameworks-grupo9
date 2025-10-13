@@ -8,8 +8,6 @@ import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
 
-import HomeScreen from './src/screens/HomeScreen'; // Crearemos esta pantalla enseguida
-
 
 // En App.tsx, después de las importaciones
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -41,12 +39,10 @@ const App = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator>
-       {user ? (
-
-         <>
-           <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Mis Hábitos' }} />
-         </>
-       ) : (
+        {user ? (
+          // Si el usuario ha iniciado sesión, muestra la BottomTab
+          <Stack.Screen name="BottomTab" component={BottomTab} options={{ headerShown: false }} />
+        ) : (
           // Si no, muestra las pantallas de autenticación
           <>
             <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
