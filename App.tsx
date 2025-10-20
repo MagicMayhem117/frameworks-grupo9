@@ -4,6 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { BottomTab} from './src/navigation/BottomTab';
 import auth, {FirebaseAuthTypes} from '@react-native-firebase/auth';
 
+import { UserProvider } from "./src/context/UserContext";
+
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
@@ -41,7 +43,8 @@ const App = () => {
 
 
   return (
-<StreakProvider>
+  <UserProvider>
+    <StreakProvider>
       <NavigationContainer>
         <Stack.Navigator>
           {user ? (
@@ -82,7 +85,8 @@ const App = () => {
           )}
         </Stack.Navigator>
       </NavigationContainer>
-    </StreakProvider>
+      </StreakProvider>
+    </UserProvider>
   );
 };
 
