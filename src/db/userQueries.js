@@ -1,4 +1,4 @@
-import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
+import { getFirestore, collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import firebaseConfig from "../keys"; 
 import { initializeApp } from "firebase/app";
 
@@ -13,4 +13,22 @@ export async function getUserByEmail(email) {
     user = { id: doc.id, ...doc.data() };
   });
   return user;
+}
+
+export async function getActividades(ids) {
+  if (!ids) return [];
+  const idsArray = Array.isArray(ids) ? ids : [ids];
+  const activities = [];
+  for (const id of idsArray) {
+    try {
+      const docRef = doc(db, "Actividades", id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap && docSnap.exists && docSnap.exists()) {
+        activities.push({ id: docSnap.id, ...docSnap.data() });
+      }
+    } catch (err) {
+      console.warn('Failed to fetch activity', id, err);
+    }
+  }
+  return activities;
 }

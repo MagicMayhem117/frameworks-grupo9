@@ -12,6 +12,11 @@ import {
 } from "react-native";
 import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
+import firebaseConfig from "../keys.js";
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, setDoc, collection, addDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import { useUser } from "../context/UserContext";
+import { getUserByEmail } from "../db/userQueries";
 
 const ICONS = ["💧", "🏃", "📚", "🍎", "💰", "🧠", "🧘", "😴", "✏", "💻"];
 const COLORS = [
@@ -184,6 +189,22 @@ export default function CreateHabitScreen() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
+  const app = initializeApp(firebaseConfig);
+
+  const db = getFirestore(app);
+
+  const { email } = useUser();
+  const [usuario, setUsuario] = useState(null);
+  
+  useEffect(() => {
+    async function fetchUser() {
+      if (email) {
+        const userData = await getUserByEmail(email);
+        setUsuario(userData);
+      }
+    }
+    fetchUser();
+  }, [email]);
   useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged((user) => {
       setUserId(user?.uid || null);
@@ -205,20 +226,21 @@ export default function CreateHabitScreen() {
     setMessage("");
 
     try {
-      await firestore()
-        .collection("users")
-        .doc(userId)
-        .collection("habits")
-        .add({
+      const actDoc = await addDoc(collection(db, "Actividades"), {
           name: habitName.trim(),
+          usuario_id: usuario.id,
           trackingType: isQuantitative ? "quantitative" : "binary",
           goal: isQuantitative ? parseFloat(dailyGoal) || 1 : 1,
           unit: isQuantitative ? unit.trim() : "completado",
           icon: iconColor.icon,
           color: iconColor.color,
           frequencyDays: selectedDays,
-          createdAt: firestore.FieldValue.serverTimestamp(),
+          //createdAt: firestore.FieldValue.serverTimestamp(),
         });
+      const usuarioRef = doc(db, "Usuarios", usuario.id);
+      await updateDoc(usuarioRef, {
+        actividades: arrayUnion(actDoc.id)
+      });
       setMessage("¡Hábito creado con éxito!");
       setHabitName("");
     } catch (err) {
@@ -243,7 +265,7 @@ export default function CreateHabitScreen() {
         <Text style={styles.title}>Nuevo Hábito</Text>
 
         {message !== "" && <Text style={styles.message}>{message}</Text>}
-
+        <Text>{usuario ? usuario.nombre : 'Cargando usuario...'}</Text>
         <Text style={styles.label}>Nombre del Hábito</Text>
         <TextInput
           style={styles.input}

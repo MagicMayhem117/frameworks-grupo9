@@ -6,7 +6,7 @@ const HomeScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>¡Bienvenido a DailyTrack! Desde Comunidad</Text>
-      <Text>Aquí verás tus hábitos.</Text>
+      <Text>Comunidad</Text>
       <Button title="Cerrar Sesión" onPress={() => auth().signOut()} />
     </View>
   );
