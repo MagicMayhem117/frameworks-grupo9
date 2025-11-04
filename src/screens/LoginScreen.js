@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,21 +12,13 @@ import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import MiLogoSVG from '../assets/LogoProvisional.svg'; // Asegúrate de que la ruta sea correcta
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
-import firebaseConfig from "../keys.js";
-import { useUser} from "../context/UserContext";
+import { useUser } from "../context/UserContext";
 
-// Función para el inicio de sesión con Google
 async function onGoogleButtonPress() {
   try {
-    // Revisa si tienes los servicios de Google Play
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-    // Obtén el ID Token del usuario
     const { idToken } = await GoogleSignin.signIn();
-    // Crea una credencial de Google con el token
     const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-    // Inicia sesión con la credencial
     return auth().signInWithCredential(googleCredential);
   } catch (error) {
     console.log(error);
@@ -36,6 +28,7 @@ async function onGoogleButtonPress() {
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { setStateEmail } = useUser();
 
   const handleLogin = async () => {
@@ -57,6 +50,7 @@ const LoginScreen = ({ navigation }) => {
       <MiLogoSVG width={80} height={80} fill="#FFF" style={styles.logo} />
       <Text style={styles.title}>Inicias sesión</Text>
 
+      {/* Campo de correo */}
       <View style={styles.inputContainer}>
         <Icon name="at" size={20} color="#888" style={styles.inputIcon} />
         <TextInput
@@ -70,6 +64,7 @@ const LoginScreen = ({ navigation }) => {
         />
       </View>
 
+      {/* Campo de contraseña con icono de ojo */}
       <View style={styles.inputContainer}>
         <Icon name="lock-outline" size={20} color="#888" style={styles.inputIcon} />
         <TextInput
@@ -78,21 +73,31 @@ const LoginScreen = ({ navigation }) => {
           placeholderTextColor="#888"
           value={password}
           onChangeText={setPassword}
-          secureTextEntry
+          secureTextEntry={!showPassword}
         />
+        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+          <Icon
+            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+            size={22}
+            color="#888"
+          />
+        </TouchableOpacity>
       </View>
 
+      {/* Botón de inicio de sesión */}
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Sign In</Text>
       </TouchableOpacity>
 
       <Text style={styles.orText}>O con</Text>
 
+      {/* Botón de Google */}
       <TouchableOpacity style={styles.googleButton} onPress={onGoogleButtonPress}>
         <Icon name="google" size={20} color="#FFF" />
         <Text style={styles.googleButtonText}>Google</Text>
       </TouchableOpacity>
 
+      {/* Enlace de registro */}
       <TouchableOpacity onPress={() => navigation.navigate('Register')}>
         <Text style={styles.footerText}>
           ¿No tienes cuenta? <Text style={styles.linkText}>Sign Up</Text>
@@ -102,7 +107,7 @@ const LoginScreen = ({ navigation }) => {
   );
 };
 
-// Estilos
+// 🎨 Estilos
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -113,7 +118,6 @@ const styles = StyleSheet.create({
   },
   logo: {
     marginBottom: 30,
-    transform: [{ rotate: '0deg' }],
   },
   title: {
     fontSize: 32,
