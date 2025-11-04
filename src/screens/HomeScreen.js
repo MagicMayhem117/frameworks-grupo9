@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, FlatList } from 'react-native';
+import { View, Text, Button, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { useUser } from "../context/UserContext";
+import HabitPopUp from '../components/HabitPopUp';
 import { getUserByEmail, getActividades } from "../db/userQueries";
 
 const HomeScreen = () => {
   const { email } = useUser();
   const [usuario, setUsuario] = useState(null);
   const [act, setAct] = useState([]);
+  const [popUpVisible, setPopUpVisible] = useState(false);
+  const [selectedHabit, setSelectedHabit] = useState(null);
 
   useEffect(() => {
     async function fetchUser() {
@@ -29,6 +32,23 @@ const HomeScreen = () => {
     fetchUser();
   }, [email]);
 
+
+  const openPopUp = (habit) => {
+    setSelectedHabit(habit);
+    setPopUpVisible(true);
+  };
+
+  const closePopUp = () => {
+    setSelectedHabit(null);
+    setPopUpVisible(false);
+  };
+
+  const completeHabit = () => {
+    // Aquí va la lógica para marcar el hábito como completado
+    console.log('Hábito completado con ID:', selectedHabit.id);
+    closePopUp();
+  };
+
   return (
     <View style={styles.container}>
       {/*<Text style={styles.title}>¡Bienvenido a DailyTrack!</Text>
@@ -46,18 +66,27 @@ const HomeScreen = () => {
             const bg = item.color || '#4a90e2';
             const title = item.nombre || item.name || 'Actividad';
             return (
-              <View style={[styles.activityBox, { backgroundColor: bg }]}>
+              <TouchableOpacity
+                style={[styles.activityBox, { backgroundColor: bg }]}
+                onPress={() => openPopUp(item)}
+              >
                 <View style={styles.activityHeader}>
                   <Text style={styles.icono}>{item.icon}</Text>
                   <Text style={styles.activityTitle}>{title}</Text>
                 </View>
                 {/* Lugar para poner una gráfica */}
                 <View style={styles.graphPlaceholder} />
-              </View>
+              </TouchableOpacity>
             );
           }}
         />
       )}
+      <HabitPopUp
+        visible={popUpVisible}
+        habit={selectedHabit}
+        onClose={closePopUp}
+        onComplete={completeHabit}
+      />
     </View>
   );
 };
