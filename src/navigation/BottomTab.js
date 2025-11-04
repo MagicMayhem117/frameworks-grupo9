@@ -67,6 +67,8 @@ export const BottomTab = () => {
                 }}
             />
 
+
+
         </Tab.Navigator>
     );
 };

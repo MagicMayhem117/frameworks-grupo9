@@ -9,8 +9,12 @@ import {
   Alert
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
 
 const EditProfileScreen = () => {
+  const navigation = useNavigation();
+
   const [photo, setPhoto] = useState(null);
   const [fullName, setFullName] = useState('Juan Pérez');
   const [username, setUsername] = useState('juanperez25');
@@ -31,13 +35,19 @@ const EditProfileScreen = () => {
   };
 
   const handleSaveChanges = () => {
-    // Aquí podrías guardar los cambios en Firebase o AsyncStorage
+    // Aquí podrías guardar los cambios en Firebase 
     Alert.alert('✅ Cambios guardados', 'Tu perfil ha sido actualizado.');
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Editar Perfil</Text>
+      {/* Encabezado con flecha */}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={28} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.header}>Editar Perfil</Text>
+      </View>
 
       {/* Avatar */}
       <View style={styles.avatarContainer}>
@@ -97,11 +107,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 20,
   },
-  header: {
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 25,
+    marginBottom: 20,
+  },
+  backButton: {
+    marginRight: 10,
+  },
+  header: {
     fontSize: 26,
     fontWeight: '700',
-    marginBottom: 20,
   },
   avatarContainer: {
     alignItems: 'center',
