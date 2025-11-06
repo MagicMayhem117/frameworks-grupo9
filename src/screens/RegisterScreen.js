@@ -35,6 +35,9 @@ const RegisterScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [verifyPassword, setVerifyPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showVerifyPassword, setShowVerifyPassword] = useState(false);
+
 
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
@@ -102,25 +105,42 @@ const RegisterScreen = ({ navigation }) => {
         />
       </View>
       <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Contraseña"
-          placeholderTextColor="#888"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-      </View>
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Verificar Contraseña"
-          placeholderTextColor="#888"
-          value={verifyPassword}
-          onChangeText={setVerifyPassword}
-          secureTextEntry
-        />
-      </View>
+  <TextInput
+    style={styles.input}
+    placeholder="Contraseña"
+    placeholderTextColor="#888"
+    value={password}
+    onChangeText={setPassword}
+    secureTextEntry={!showPassword}
+  />
+  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+    <Icon
+      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+      size={22}
+      color="#888"
+    />
+  </TouchableOpacity>
+</View>
+
+<View style={styles.inputContainer}>
+  <TextInput
+    style={styles.input}
+    placeholder="Verificar Contraseña"
+    placeholderTextColor="#888"
+    value={verifyPassword}
+    onChangeText={setVerifyPassword}
+    secureTextEntry={!showVerifyPassword}
+  />
+  <TouchableOpacity onPress={() => setShowVerifyPassword(!showVerifyPassword)} style={styles.eyeButton}>
+    <Icon
+      name={showVerifyPassword ? 'eye-off-outline' : 'eye-outline'}
+      size={22}
+      color="#888"
+    />
+  </TouchableOpacity>
+</View>
+
+
 
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Crear Cuenta</Text>
@@ -160,6 +180,8 @@ const styles = StyleSheet.create({
         marginBottom: 30,
     },
     inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: '#1E1E1E',
         borderRadius: 10,
         width: '100%',
@@ -167,8 +189,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
     },
     input: {
+        flex: 1,
         height: 50,
         color: '#FFF',
+    },
+    eyeButton: {
+        paddingHorizontal: 5,
+        paddingVertical: 10,
     },
     button: {
         backgroundColor: '#0D6EFD',
