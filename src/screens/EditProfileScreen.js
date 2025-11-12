@@ -205,14 +205,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 20,
   },
-    avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 50,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 15,
+  avatar: {
+  width: 90,
+  height: 90,
+  borderRadius: 50,
+  overflow: 'hidden',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginRight: 15,
   },
   avatarContainer: {
     alignItems: 'center',

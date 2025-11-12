@@ -4,9 +4,6 @@ import auth from '@react-native-firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import { useUser } from "../context/UserContext";
 import { getUserByEmail } from "../db/userQueries";
-import firebaseConfig from "../keys.js";
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
 import { findProfile } from "../components/FindProfileImg.js"
 
 const SettingsScreen = () => {

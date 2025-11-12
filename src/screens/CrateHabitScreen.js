@@ -10,11 +10,10 @@ import {
   ScrollView,
   SafeAreaView,
 } from "react-native";
-import firestore from "@react-native-firebase/firestore";
+// removed duplicate react-native-firebase import; using modular web SDK via src/firebase
 import auth from "@react-native-firebase/auth";
-import firebaseConfig from "../keys.js";
-import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, collection, addDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import { db } from "../firebase";
+import { doc, setDoc, collection, addDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { useUser } from "../context/UserContext";
 import { getUserByEmail } from "../db/userQueries";
 
@@ -189,9 +188,7 @@ export default function CreateHabitScreen() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
-  const app = initializeApp(firebaseConfig);
-
-  const db = getFirestore(app);
+  // use shared db from src/firebase
 
   const { email } = useUser();
   const [usuario, setUsuario] = useState(null);

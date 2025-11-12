@@ -31,9 +31,6 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/*<Text style={styles.title}>¡Bienvenido a DailyTrack!</Text>
-      <Text>{usuario ? usuario.nombre : 'Cargando usuario...'}</Text>
-      <Button title="Cerrar Sesión" onPress={() => auth().signOut()} />*/}
 
       {act.length === 0 ? (
         <Text style={{ marginTop: 12 }}>Cargando actividad...</Text>
