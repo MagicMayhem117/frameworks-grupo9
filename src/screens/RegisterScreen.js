@@ -62,7 +62,8 @@ const RegisterScreen = ({ navigation }) => {
       await addDoc(collection(db, "Usuarios"), {
         nombre: nombre,
         correo: email,
-        racha: 0
+        racha: 0,
+        img_path: 'perfil1'
       });
     } catch (error) {
       if (error.code === 'auth/email-already-in-use') {
