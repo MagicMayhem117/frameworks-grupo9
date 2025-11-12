@@ -12,9 +12,8 @@ import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import MiLogoSVG from '../assets/LogoProvisional.svg'; // Asegúrate de que la ruta sea correcta
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, collection, addDoc } from "firebase/firestore";
-import firebaseConfig from "../keys.js";
+import { db } from "../firebase";
+import { doc, setDoc, collection, addDoc } from "firebase/firestore";
 
 // La misma función de Google funciona para registrarse o iniciar sesión
 async function onGoogleButtonPress() {
@@ -39,12 +38,7 @@ const RegisterScreen = ({ navigation }) => {
   const [showVerifyPassword, setShowVerifyPassword] = useState(false);
 
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-
-
-  // Initialize Cloud Firestore and get a reference to the service
-  const db = getFirestore(app);
+  // Using shared db from src/firebase
 
   const handleRegister = async () => {
     if (!nombre || !email || !password || !verifyPassword) {
@@ -65,7 +59,8 @@ const RegisterScreen = ({ navigation }) => {
       await addDoc(collection(db, "Usuarios"), {
         nombre: nombre,
         correo: email,
-        racha: 0
+        racha: 0,
+        img_path: 'perfil1'
       });
     } catch (error) {
       if (error.code === 'auth/email-already-in-use') {

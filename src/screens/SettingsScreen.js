@@ -1,12 +1,28 @@
-import React, { useState } from 'react';
-import { View, Text, Switch, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Switch, TouchableOpacity, StyleSheet, ImageBackground, Image } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { useNavigation } from '@react-navigation/native';
+import { useUser } from "../context/UserContext";
+import { getUserByEmail } from "../db/userQueries";
+import { findProfile } from "../components/FindProfileImg.js"
 
 const SettingsScreen = () => {
   const navigation = useNavigation();
   const [dailyNotifications, setDailyNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+
+  const { email } = useUser();
+  const [usuario, setUsuario] = useState(null);
+    
+  useEffect(() => {
+    async function fetchUser() {
+      if (email) {
+        const userData = await getUserByEmail(email);
+        setUsuario(userData);
+      }
+    }
+    fetchUser();
+  }, [email]);
 
   return (
     <View style={styles.container}>
@@ -17,11 +33,11 @@ const SettingsScreen = () => {
       {/* Perfil */}
       <View style={styles.profileCard}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>JP</Text>
+            <Image source={usuario ? findProfile(usuario.img_path) : require('../assets/profiles/perfil1.webp')} style={styles.backgroundImage}></Image>
         </View>
         <View>
-          <Text style={styles.profileName}>Juan Pérez</Text>
-          <Text style={styles.profileUser}>@juanperez25</Text>
+          <Text style={styles.profileName}>{usuario ? usuario.nombre : 'Cargando usuario...'}</Text>
+          <Text style={styles.profileUser}>{usuario ? usuario.correo : 'Cargando correo...'}</Text>
         </View>
       </View>
 
@@ -95,7 +111,7 @@ const styles = StyleSheet.create({
     width: 55,
     height: 55,
     borderRadius: 30,
-    backgroundColor: '#5A4DF3',
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 15,
@@ -104,6 +120,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 20,
+  },
+  backgroundImage: {
+    flex: 1,
+    width: 55,
+    height: 55,
+    borderRadius: 30,
   },
   profileName: {
     fontSize: 16,
