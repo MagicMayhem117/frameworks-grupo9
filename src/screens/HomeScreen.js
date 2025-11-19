@@ -75,7 +75,7 @@ export default function HomeScreen({ navigation }) {
     <View style={styles.container}>
       <Text style={styles.header}>Tus Actividades</Text>
 
-      {activities.length === 0 ? (
+      {act.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={{ color: "#6b7280", marginBottom: 10 }}>
             Aún no tienes actividades
