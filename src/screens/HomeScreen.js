@@ -30,24 +30,40 @@ export default function HomeScreen({ navigation }) {
   const dateAct = date.getDate() + " " + date.getMonth();
 
   useEffect(() => {
-    async function fetchUser() {
-      if (email) {
-        const userData = await getUserByEmail(email);
-        setUsuario(userData);
-        {/* Consigue el usuario, crea un array con las actividades con otra consulta */}
-        const actividadIds = userData?.actividades || [];
-        if (actividadIds.length > 0) {
-          console.log(actividadIds);
-          const actDataArray = await getActividades(actividadIds);
-          console.log('Activities loaded', actDataArray);
-          setAct(actDataArray);
-        } else {
-          setAct([]);
-        }
+    if (!user) return;
+
+    const q = query(
+      collection(db, "Actividades"),
+      where("usuario_id", "==", user.uid),
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setActivities(data);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error al obtener actividades:", error);
+        setLoading(false);
       }
-    }
-    fetchUser();
-  }, [email]);
+    );
+
+    return () => unsubscribe();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#4f46e5" />
+        <Text style={{ marginTop: 8 }}>Cargando actividades...</Text>
+      </View>
+    );
+  }
 
 
   const openPopUp = (habit) => {

@@ -251,7 +251,6 @@ const HomeScreen = () => {
           }}
         />
       )}
-      <Button title="Cerrar Sesión" onPress={() => auth().signOut()} />
     </View>
   );
 };
