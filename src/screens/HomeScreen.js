@@ -24,8 +24,6 @@ import { getUserByEmail, getActividades } from "../db/userQueries";
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from "../firebase";
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
 export default function HomeScreen({ navigation }) {
   const { email } = useUser();
