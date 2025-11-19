@@ -11,6 +11,7 @@ import {
   ScrollView,
   SafeAreaView,
 } from "react-native";
+import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
 import { db } from "../firebase";
 import { doc, setDoc, collection, addDoc, updateDoc, arrayUnion } from "firebase/firestore";
@@ -365,7 +366,7 @@ const IconColorModal = ({ visible, onClose, onSelect, current }) => {
   );
 };
 
-// ------------------ MODAL DE FRECUENCIA (TU ORIGINAL) ------------------
+// ------------------ MODAL DE FRECUENCIA ------------------
 const FrequencyModal = ({ visible, onClose, onSelect, currentDays }) => {
   const [days, setDays] = useState(currentDays);
 
@@ -431,9 +432,7 @@ const FrequencyModal = ({ visible, onClose, onSelect, currentDays }) => {
   );
 };
 
-// ----------------------------------------------------------------------
-// PANTALLA PRINCIPAL
-// ----------------------------------------------------------------------
+// ------------------ PANTALLA PRINCIPAL ------------------
 export default function CreateHabitScreen() {
   const [habitName, setHabitName] = useState("");
   const [isQuantitative, setIsQuantitative] = useState(true);
@@ -450,7 +449,7 @@ export default function CreateHabitScreen() {
   const [message, setMessage] = useState("");
   const { email } = useUser();
   const [usuario, setUsuario] = useState(null);
-
+  
   useEffect(() => {
     if (!email) return;
     (async () => {
@@ -458,7 +457,6 @@ export default function CreateHabitScreen() {
       setUsuario(data);
     })();
   }, [email]);
-
   useEffect(() => {
     return auth().onAuthStateChanged((u) => {
       setUserId(u?.uid || null);
@@ -490,20 +488,20 @@ export default function CreateHabitScreen() {
 
     try {
       const actDoc = await addDoc(collection(db, "Actividades"), {
-        name: habitName,
-        usuario_id: usuario.id,
-        trackingType: isQuantitative ? "quantitative" : "binary",
-        goal: isQuantitative ? Number(dailyGoal) : 1,
-        unit: isQuantitative ? unit.trim() : "completado",
-        icon: iconColor.icon,
-        color: iconColor.color,
-        frequencyDays: selectedDays,
+          name: habitName.trim(),
+          usuario_id: usuario.id,
+          trackingType: isQuantitative ? "quantitative" : "binary",
+          goal: isQuantitative ? parseFloat(dailyGoal) || 1 : 1,
+          unit: isQuantitative ? unit.trim() : "completado",
+          icon: iconColor.icon,
+          color: iconColor.color,
+          frequencyDays: selectedDays,
+          //createdAt: firestore.FieldValue.serverTimestamp(),
+        });
+      const usuarioRef = doc(db, "Usuarios", usuario.id);
+      await updateDoc(usuarioRef, {
+        actividades: arrayUnion(actDoc.id)
       });
-
-      await updateDoc(doc(db, "Usuarios", usuario.id), {
-        actividades: arrayUnion(actDoc.id),
-      });
-
       setMessage("¡Hábito creado con éxito!");
       setHabitName("");
       setDailyGoal("1");
@@ -636,9 +634,7 @@ export default function CreateHabitScreen() {
   );
 }
 
-// ----------------------------------------------------------------------
-// ESTILOS COMPLETOS (con los estilos de tus modales originales añadidos)
-// ----------------------------------------------------------------------
+// ------------------ ESTILOS ------------------
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   scroll: { padding: 20 },
@@ -831,7 +827,6 @@ const styles = StyleSheet.create({
     margin: 4,
   },
   iconText: { fontSize: 22 },
-
   modalButtons: {
     flexDirection: "row",
     justifyContent: "flex-end",
