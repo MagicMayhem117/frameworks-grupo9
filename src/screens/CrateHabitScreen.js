@@ -1,3 +1,4 @@
+// --- IMPORTS ---
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -23,20 +24,170 @@ import {
   collection,
   serverTimestamp,
 } from "firebase/firestore";
+import { db } from "../firebase";
 import { useUser } from "../context/UserContext";
 import { getUserByEmail } from "../db/userQueries";
+import Icon from "react-native-vector-icons/Ionicons";
 
-const ICONS = ["💧", "🏃", "📚", "🍎", "💰", "🧠", "🧘", "😴", "✏", "💻"];
-const COLORS = [
-  "#3b82f6",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#ec4899",
-  "#06b6d4",
-  "#6b7280",
-];
+// ICONS & COLORS
+const COLORS = {
+  "Salud Física y Bienestar": "#3b82f6",
+  "Salud Mental y Estrés": "#8b5cf6",
+  "Productividad y Desarrollo Personal": "#10b981",
+  "Organización y Tareas del Hogar": "#f59e0b",
+  Finanzas: "#ef4444",
+  "Relaciones Sociales": "#dd74a9",
+};
+
+const CATEGORY_ICONS = {
+  "Salud Física y Bienestar": "💪",
+  "Salud Mental y Estrés": "🧘",
+  "Productividad y Desarrollo Personal": "🚀",
+  "Organización y Tareas del Hogar": "🏠",
+  "Finanzas": "💵",
+  "Relaciones Sociales": "❤",
+};
+
+const DEFAULT_ICONS = {
+  "Hacer ejercicio (general)": "🏋️",
+  "Ir al gimnasio": "🏋️‍♂️",
+  Caminar: "🚶",
+  "Correr / Salir a trotar": "🏃",
+  "Hacer yoga": "🧘",
+  "Beber 2+ litros de agua": "💧",
+  "Dormir 7-8 horas": "😴",
+  "Acostarse antes de las 11 PM": "🌙",
+  "Despertarse antes de las 7 AM": "⏰",
+  "Tomar medicamentos / Vitaminas": "💊",
+  "Usar hilo dental": "🦷",
+  "Comida preparada en casa (Almuerzo)": "🍽️",
+  "Comida preparada en casa (Cena)": "🍽️",
+  "Comer 5 porciones de fruta/vegetales": "🍎",
+  "Registrar peso": "⚖️",
+  "Día sin comida chatarra": "🚫🍔",
+  "Día sin azúcar añadido": "🚫🍬",
+  "Día sin alcohol": "🚫🍺",
+  "Día sin fumar": "🚭",
+  Meditar: "🧘",
+  "Escribir en el diario (Journaling)": "📓",
+  "No usar el móvil 1h antes de dormir": "📵",
+  "Tiempo de relajación (sin culpa)": "🛀",
+  "Pasar tiempo al aire libre / Naturaleza": "🌳",
+  "Tomar el sol": "☀️",
+  "Escribir sobre un pensamiento negativo": "✏️",
+  Leer: "📚",
+  "Estudiar un idioma": "🗣️",
+  "Practicar instrumento/habilidad": "🎸",
+  "Estudiar para un curso": "📖",
+  "Ver/escuchar contenido educativo (Podcast, video)": "🎧",
+  "Planificar el día (Definir prioridades)": "🗓️",
+  "Trabajar en proyecto personal / negocio secundario": "💻",
+  "Enviar currículums / Buscar trabajo": "📄",
+  "Hacer 'networking'": "🤝",
+  "Tiempo en redes sociales menor a 1 hora": "📱",
+  "Llegar a tiempo": "⏱️",
+  "Escuchar un álbum de música nuevo": "🎵",
+  "Probar una nueva receta": "🍳",
+  "Limpiar / Ordenar": "🧹",
+  "Tender la cama": "🛏️",
+  "Lavar la ropa": "🧺",
+  "Hacer la compra / Supermercado": "🛒",
+  "Sacar la basura": "🗑️",
+  "Regar las plantas": "🌱",
+  "Preparar la ropa para el día siguiente": "👕",
+  "Pasear al perro": "🐕",
+  "Jugar con la mascota": "🐾",
+  "Limpiar la caja de arena / jaula": "🐈",
+  "Ayudar a los hijos con la tarea": "👨‍👩‍👧‍👦",
+  "Leer un cuento a los hijos": "📘",
+  "Jugar con los hijos": "🧸",
+  "Registrar gastos del día": "💰",
+  "Transferir dinero a cuenta de ahorros": "🏦",
+  "Realizar un pago a deuda": "💳",
+  "Día sin gastos (innecesarios)": "🚫💸",
+  "Revisar estado de cuenta / presupuesto": "📊",
+  "Llamar a un familiar / amigo": "📞",
+  "Tiempo de calidad (Familia)": "👨‍👩‍👧",
+  "Tiempo de calidad (Pareja)": "❤️",
+  "Tiempo de calidad (Amigos)": "🧑‍🤝‍🧑",
+};
+
+const CATEGORIES = {
+  "Salud Física y Bienestar": [
+    "Hacer ejercicio (general)",
+    "Ir al gimnasio",
+    "Caminar",
+    "Correr / Salir a trotar",
+    "Hacer yoga",
+    "Beber 2+ litros de agua",
+    "Dormir 7-8 horas",
+    "Acostarse antes de las 11 PM",
+    "Despertarse antes de las 7 AM",
+    "Tomar medicamentos / Vitaminas",
+    "Usar hilo dental",
+    "Comida preparada en casa (Almuerzo)",
+    "Comida preparada en casa (Cena)",
+    "Comer 5 porciones de fruta/vegetales",
+    "Registrar peso",
+    "Día sin comida chatarra",
+    "Día sin azúcar añadido",
+    "Día sin alcohol",
+    "Día sin fumar",
+  ],
+  "Salud Mental y Estrés": [
+    "Meditar",
+    "Escribir en el diario (Journaling)",
+    "No usar el móvil 1h antes de dormir",
+    "Tiempo de relajación (sin culpa)",
+    "Pasar tiempo al aire libre / Naturaleza",
+    "Tomar el sol",
+    "Escribir sobre un pensamiento negativo",
+  ],
+  "Productividad y Desarrollo Personal": [
+    "Leer",
+    "Estudiar un idioma",
+    "Practicar instrumento/habilidad",
+    "Estudiar para un curso",
+    "Ver/escuchar contenido educativo (Podcast, video)",
+    "Planificar el día (Definir prioridades)",
+    "Trabajar en proyecto personal / negocio secundario",
+    "Enviar currículums / Buscar trabajo",
+    "Hacer 'networking'",
+    "Tiempo en redes sociales menor a 1 hora",
+    "Llegar a tiempo",
+    "Escuchar un álbum de música nuevo (atentamente)",
+    "Probar una nueva receta",
+  ],
+  "Organización y Tareas del Hogar": [
+    "Limpiar / Ordenar",
+    "Tender la cama",
+    "Lavar la ropa",
+    "Hacer la compra / Supermercado",
+    "Sacar la basura",
+    "Regar las plantas",
+    "Preparar la ropa para el día siguiente",
+    "Pasear al perro",
+    "Jugar con la mascota",
+    "Limpiar la caja de arena / jaula",
+    "Ayudar a los hijos con la tarea",
+    "Leer un cuento a los hijos",
+    "Jugar con los hijos",
+  ],
+  Finanzas: [
+    "Registrar gastos del día",
+    "Transferir dinero a cuenta de ahorros",
+    "Realizar un pago a deuda",
+    "Día sin gastos (innecesarios)",
+    "Revisar estado de cuenta / presupuesto",
+  ],
+  "Relaciones Sociales": [
+    "Llamar a un familiar / amigo",
+    "Tiempo de calidad (Familia)",
+    "Tiempo de calidad (Pareja)",
+    "Tiempo de calidad (Amigos)",
+  ],
+};
+
 const DAYS_OF_WEEK = [
   { key: "Sun", label: "D" },
   { key: "Mon", label: "L" },
@@ -72,7 +223,7 @@ const IconColorModal = ({ visible, onClose, onSelect, current }) => {
 
           <Text style={styles.subTitle}>Color de Acento</Text>
           <View style={styles.colorsGrid}>
-            {COLORS.map((c) => (
+            {["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#6b7280"].map((c) => (
               <TouchableOpacity
                 key={c}
                 style={[
@@ -86,7 +237,7 @@ const IconColorModal = ({ visible, onClose, onSelect, current }) => {
 
           <Text style={styles.subTitle}>Icono del Hábito</Text>
           <View style={styles.iconsGrid}>
-            {ICONS.map((i) => (
+            {["💧", "🏃", "📖", "🍎", "💵", "🧠", "🧘‍♀️", "😴", "✏️", "💻"].map((i) => (
               <TouchableOpacity
                 key={i}
                 style={[
@@ -132,9 +283,7 @@ const FrequencyModal = ({ visible, onClose, onSelect, currentDays }) => {
       ? "Todos los días (7/semana)"
       : days.length === 0
       ? "Ningún día seleccionado"
-      : `${days.map((d) => DAYS_OF_WEEK.find((w) => w.key === d)?.label).join(", ")} (${
-          days.length
-        }/semana)`;
+      : `${days.map((d) => DAYS_OF_WEEK.find((w) => w.key === d)?.label).join(", ")} (${days.length}/semana)`;
 
   return (
     <Modal visible={visible} transparent animationType="slide">
@@ -186,41 +335,41 @@ export default function CreateHabitScreen({ navigation }) {
   const [isQuantitative, setIsQuantitative] = useState(true);
   const [dailyGoal, setDailyGoal] = useState("1");
   const [unit, setUnit] = useState("veces");
-  const [iconColor, setIconColor] = useState({ icon: "💧", color: "#3b82f6" });
+  const [iconColor, setIconColor] = useState({ icon: "✨", color: "#4f46e5" });
   const [selectedDays, setSelectedDays] = useState(DAYS_OF_WEEK.map((d) => d.key));
+  const [showHabitModal, setShowHabitModal] = useState(false);
   const [showIconModal, setShowIconModal] = useState(false);
   const [showFreqModal, setShowFreqModal] = useState(false);
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
   const { email } = useUser();
   const [usuario, setUsuario] = useState(null);
 
   useEffect(() => {
-    async function fetchUser() {
-      if (email) {
-        const userData = await getUserByEmail(email);
-        setUsuario(userData);
-      }
-    }
-    fetchUser();
+    if (!email) return;
+    (async () => {
+      const data = await getUserByEmail(email);
+      setUsuario(data);
+    })();
   }, [email]);
 
   useEffect(() => {
-    const unsubscribe = auth().onAuthStateChanged((user) => {
-      setUserId(user?.uid || null);
+    return auth().onAuthStateChanged((u) => {
+      setUserId(u?.uid || null);
       setLoading(false);
     });
-    return unsubscribe;
   }, []);
 
   const handleCreate = async () => {
+    if (saving) return;
     if (!habitName.trim()) {
-      setMessage("Debes ingresar un nombre para el hábito.");
+      setMessage("Debes seleccionar un hábito.");
+      return;
+    }
+    if (!usuario || !usuario.id) {
+      setMessage("No se pudo obtener la información del usuario.");
       return;
     }
     if (!userId) {
@@ -366,12 +515,23 @@ export default function CreateHabitScreen({ navigation }) {
         </ScrollView>
       </SafeAreaView>
 
+      <HabitSelectorModal
+        visible={showHabitModal}
+        onClose={() => setShowHabitModal(false)}
+        onSelect={(h) => {
+          setHabitName(h.name);
+          setIconColor({ icon: h.icon, color: h.color });
+          setShowHabitModal(false);
+        }}
+      />
+
       <IconColorModal
         visible={showIconModal}
         onClose={() => setShowIconModal(false)}
         onSelect={setIconColor}
         current={iconColor}
       />
+
       <FrequencyModal
         visible={showFreqModal}
         onClose={() => setShowFreqModal(false)}
@@ -396,7 +556,7 @@ const styles = StyleSheet.create({
   toggleRow: { flexDirection: "row", marginTop: 10 },
   toggleButton: { flex: 1, padding: 10, borderWidth: 1, borderColor: "#4f46e5", alignItems: "center", borderRadius: 8, marginHorizontal: 4 },
   activeButton: { backgroundColor: "#4f46e5" },
-  activeText: { color: "white", fontWeight: "600" },
+  activeText: { color: "#fff", fontWeight: "600" },
   inactiveText: { color: "#4f46e5", fontWeight: "600" },
   row: { flexDirection: "row", justifyContent: "space-between" },
   saveButton: { marginTop: 20, backgroundColor: "#4f46e5", paddingVertical: 14, borderRadius: 10, alignItems: "center" },
@@ -405,10 +565,12 @@ const styles = StyleSheet.create({
   modalContainer: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: 20 },
   modalContent: { backgroundColor: "#fff", borderRadius: 16, padding: 20, width: "100%" },
   modalTitle: { fontSize: 18, fontWeight: "700", marginBottom: 10, color: "#111827" },
+
   previewContainer: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
   previewCircle: { width: 60, height: 60, borderRadius: 30, justifyContent: "center", alignItems: "center" },
   previewIcon: { fontSize: 28, color: "white" },
   previewLabel: { marginLeft: 10, fontSize: 16 },
+
   subTitle: { marginTop: 10, fontWeight: "600", color: "#6b7280" },
   colorsGrid: { flexDirection: "row", flexWrap: "wrap", marginVertical: 10 },
   colorOption: { width: 30, height: 30, borderWidth: 2, borderRadius: 15, margin: 4 },
@@ -421,6 +583,7 @@ const styles = StyleSheet.create({
   confirmButton: { backgroundColor: "#4f46e5" },
   cancelText: { color: "#111827", fontWeight: "600" },
   confirmText: { color: "white", fontWeight: "600" },
+
   daysRow: { flexDirection: "row", justifyContent: "space-around", marginVertical: 10 },
   dayButton: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center" },
   dayText: { fontWeight: "700" },

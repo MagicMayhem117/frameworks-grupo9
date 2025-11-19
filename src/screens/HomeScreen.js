@@ -18,11 +18,19 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import firebaseConfig from "../keys.js";
+import { useUser } from "../context/UserContext";
+import HabitPopUp from '../components/HabitPopUp';
+import { getUserByEmail, getActividades } from "../db/userQueries";
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 export default function HomeScreen({ navigation }) {
+  const { email } = useUser();
+  const [usuario, setUsuario] = useState(null);
+  const [act, setAct] = useState([]);
+  const [popUpVisible, setPopUpVisible] = useState(false);
+  const [selectedHabit, setSelectedHabit] = useState(null);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const user = auth().currentUser;
@@ -62,6 +70,23 @@ export default function HomeScreen({ navigation }) {
       </View>
     );
   }
+
+
+  const openPopUp = (habit) => {
+    setSelectedHabit(habit);
+    setPopUpVisible(true);
+  };
+
+  const closePopUp = () => {
+    setSelectedHabit(null);
+    setPopUpVisible(false);
+  };
+
+  const completeHabit = () => {
+    // Aquí va la lógica para marcar el hábito como completado
+    console.log('Hábito completado con ID:', selectedHabit.id);
+    closePopUp();
+  };
 
   return (
     <View style={styles.container}>
@@ -104,6 +129,12 @@ export default function HomeScreen({ navigation }) {
           )}
         />
       )}
+      <HabitPopUp
+        visible={popUpVisible}
+        habit={selectedHabit}
+        onClose={closePopUp}
+        onComplete={completeHabit}
+      />
     </View>
   );
 }
