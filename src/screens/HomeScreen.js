@@ -4,6 +4,8 @@ import auth from '@react-native-firebase/auth';
 import { useUser } from "../context/UserContext";
 import HabitPopUp from '../components/HabitPopUp';
 import { getUserByEmail, getActividades } from "../db/userQueries";
+import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { db } from "../firebase";
 
 const HomeScreen = () => {
   const { email } = useUser();
@@ -11,6 +13,9 @@ const HomeScreen = () => {
   const [act, setAct] = useState([]);
   const [popUpVisible, setPopUpVisible] = useState(false);
   const [selectedHabit, setSelectedHabit] = useState(null);
+
+  let date = new Date();
+  const dateAct = date.getDate() + " " + date.getMonth();
 
   useEffect(() => {
     async function fetchUser() {
@@ -43,9 +48,14 @@ const HomeScreen = () => {
     setPopUpVisible(false);
   };
 
-  const completeHabit = () => {
+  const completeHabit = async () => {
     // Aquí va la lógica para marcar el hábito como completado
+    console.log(dateAct);
     console.log('Hábito completado con ID:', selectedHabit.id);
+    const actividadRef = doc(db, 'Actividades', selectedHabit.id);
+    await updateDoc(actividadRef, {
+      fecha: dateAct
+    });
     closePopUp();
   };
 
@@ -61,6 +71,7 @@ const HomeScreen = () => {
           contentContainerStyle={{ paddingVertical: 16, width: '100%', alignItems: 'left' }}
           renderItem={({ item }) => {
             const bg = item.color || '#4a90e2';
+            const reg = (dateAct == item.fecha) ? '#4df358ff' : '#ef4444';
             const title = item.nombre || item.name || 'Actividad';
             return (
               <TouchableOpacity
@@ -70,6 +81,9 @@ const HomeScreen = () => {
                 <View style={styles.activityHeader}>
                   <Text style={styles.icono}>{item.icon}</Text>
                   <Text style={styles.activityTitle}>{title}</Text>
+                  <View style={[styles.dispDisplay, {backgroundColor: reg}]}>
+                    <Text style={styles.disp}>{(dateAct == item.fecha) ? "Registrada" : "No Registrada"}</Text>
+                  </View>
                 </View>
                 {/* Lugar para poner una gráfica */}
                 <View style={styles.graphPlaceholder} />
@@ -112,6 +126,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 8,
+  },
+  disp: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  dispDisplay: {
+    backgroundColor: '#4df358ff',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginLeft: 'auto',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   activityHeader: {
     width: '100%',

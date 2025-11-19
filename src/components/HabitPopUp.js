@@ -15,7 +15,7 @@ const HabitPopUp = ({ visible, habit, onClose, onComplete }) => {
         onPress={onClose}
       >
         <TouchableOpacity
-          style={styles.modalView}
+          style={[styles.modalView, {backgroundColor: habit?.color}]}
           activeOpacity={1}
           onPress={(e) => e.stopPropagation()}
         >
@@ -25,15 +25,28 @@ const HabitPopUp = ({ visible, habit, onClose, onComplete }) => {
           >
             <Text style={styles.closeButtonText}>X</Text>
           </TouchableOpacity>
-          <Text style={styles.modalText}>{habit?.name}</Text>
+          <View style={styles.activityHeader}>
+            <Text style={styles.icono}>{habit?.icon}</Text>
+            <Text style={styles.modalTitle}>{habit?.name}</Text>
+          </View>
           <Text style={styles.modalText}>{habit?.description}</Text>
 
-          <TouchableOpacity
-            style={[styles.button, styles.buttonComplete]}
-            onPress={onComplete}
-          >
-            <Text style={styles.textStyle}>Completar</Text>
-          </TouchableOpacity>
+          {habit?.trackingType == 'binary' ? (
+            <TouchableOpacity
+              style={[styles.button, styles.buttonComplete]}
+              onPress={onComplete}
+            >
+              <Text style={styles.textStyle}>Completar</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.button, styles.buttonComplete]}
+              onPress={onComplete}
+            >
+              <Text style={styles.textStyle}>Completar</Text>
+            </TouchableOpacity>
+          )}
+
         </TouchableOpacity>
       </TouchableOpacity>
     </Modal>
@@ -44,12 +57,11 @@ const styles = StyleSheet.create({
   centeredView: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "left",
     marginTop: 22
   },
   modalView: {
     margin: 20,
-    backgroundColor: "white",
     borderRadius: 20,
     padding: 35,
     alignItems: "center",
@@ -68,6 +80,15 @@ const styles = StyleSheet.create({
     elevation: 2,
     margin: 5,
   },
+  activityHeader: {
+    width: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginBottom: 8,
+    borderRadius: 20,
+  },
   closeButton: {
     position: 'absolute',
     top: 10,
@@ -85,9 +106,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   buttonComplete: {
-    backgroundColor: "#2196F3",
+    backgroundColor: "#4f46e5",
   },
   textStyle: {
+    fontSize: 15,
     color: "white",
     fontWeight: "bold",
     textAlign: "center"
@@ -95,7 +117,22 @@ const styles = StyleSheet.create({
   modalText: {
     marginBottom: 15,
     textAlign: "center"
-  }
+  },
+  modalTitle: {
+    color: "white",
+    fontSize: 30,
+    fontWeight: '600',
+    textAlign: "center",
+    paddingRight: 20,
+  },
+  icono: {
+    fontSize: 24,
+    marginRight: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    textAlign: 'center',
+    borderRadius: 8,
+  },
 });
 
 export default HabitPopUp;
