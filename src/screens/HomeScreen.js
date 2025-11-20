@@ -8,12 +8,26 @@ import {
   StyleSheet,
 } from "react-native";
 import auth from "@react-native-firebase/auth";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { useUser } from "../context/UserContext";
 import HabitPopUp from '../components/HabitPopUp';
-import { getActividades, listenUserByEmail, listenActividades } from "../db/userQueries";
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { listenUserByEmail, listenActividades } from "../db/userQueries";
+import { doc, updateDoc } from 'firebase/firestore';
 import { db } from "../firebase";
+
+const meses = {
+  0: "enero",
+  1: "febrero",
+  2: "marzo",
+  3: "abril",
+  4: "mayo",
+  5: "junio",
+  6: "julio",
+  7: "agosto",
+  8: "septiembre",
+  9: "octubre",
+  10: "noviembre",
+  11: "diciembre",
+}
 
 
 export default function HomeScreen({ navigation }) {
@@ -22,9 +36,7 @@ export default function HomeScreen({ navigation }) {
   const [act, setAct] = useState([]);
   const [popUpVisible, setPopUpVisible] = useState(false);
   const [selectedHabit, setSelectedHabit] = useState(null);
-  const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const user = auth().currentUser;
   const activitiesUnsubRef = useRef(null);
 
   let date = new Date();
@@ -36,7 +48,7 @@ export default function HomeScreen({ navigation }) {
     const unsubscribeUser = listenUserByEmail(email, async (userData) => {
       setUsuario(userData);
 
-      // cleanup previous activity listeners
+      // limpia los listeners previos
       if (activitiesUnsubRef.current) {
         try {
           activitiesUnsubRef.current();
@@ -53,7 +65,7 @@ export default function HomeScreen({ navigation }) {
         return;
       }
 
-      // listen to each actividad doc and update `act` in real-time
+      // escucha cada hábito
       activitiesUnsubRef.current = listenActividades(actividadIds, (updatedActivities) => {
         setAct(updatedActivities);
         setLoading(false);
@@ -96,14 +108,69 @@ export default function HomeScreen({ navigation }) {
     setPopUpVisible(false);
   };
 
-  const completeHabit = async () => {
+  const completeHabit = async (cantidad) => {
     // Aquí va la lógica para marcar el hábito como completado
-    console.log(dateAct);
+    if (selectedHabit.fecha == dateAct) {
+      console.log("Este hábito ya se ha completado");
+      closePopUp();
+      return;
+    }
     console.log('Hábito completado con ID:', selectedHabit.id);
     const actividadRef = doc(db, 'Actividades', selectedHabit.id);
     await updateDoc(actividadRef, {
       fecha: dateAct
     });
+    let fecha = new Date();
+    const mes = meses[fecha.getMonth()];
+    if (!cantidad) {
+      cantidad = 1;
+    }
+    if (!selectedHabit[mes]) {
+      await updateDoc(actividadRef, {
+        [mes]: 1
+      });
+    } else {
+      await updateDoc(actividadRef, {
+        [mes]: selectedHabit[mes] + 1,
+      });
+    }
+    console.log(mes);
+    if (selectedHabit.trackingType == 'binary') {
+      try {
+        let datos_mes = []
+        if (!selectedHabit.ultimo_mes) {
+          datos_mes = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+        } else {
+          datos_mes = selectedHabit.ultimo_mes;
+        }
+        datos_mes.shift();
+        datos_mes.push(1);
+        console.log(datos_mes);
+        await updateDoc(actividadRef, {
+          ultimo_mes: datos_mes
+        });
+      } catch (e) {
+          console.log(e);
+      }
+    } else {
+      try {
+        let datos_mes = []
+        if (!selectedHabit.ultimo_mes) {
+          datos_mes = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+        } else {
+          datos_mes = selectedHabit.ultimo_mes;
+        }
+        datos_mes.shift();
+        datos_mes.push(parseInt(cantidad));
+        console.log(datos_mes);
+        await updateDoc(actividadRef, {
+          //[dia]: 1,
+          ultimo_mes: datos_mes
+        });
+      } catch (e) {
+          console.log(e);
+      }
+    }
     closePopUp();
   };
 
