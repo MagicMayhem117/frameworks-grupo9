@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import auth from "@react-native-firebase/auth";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { useUser } from "../context/UserContext";
 import HabitPopUp from '../components/HabitPopUp';
-import { getUserByEmail, getActividades } from "../db/userQueries";
+import { getActividades, listenUserByEmail, listenActividades } from "../db/userQueries";
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from "../firebase";
 
@@ -25,36 +25,56 @@ export default function HomeScreen({ navigation }) {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const user = auth().currentUser;
+  const activitiesUnsubRef = useRef(null);
 
   let date = new Date();
   const dateAct = date.getDate() + " " + date.getMonth();
 
   useEffect(() => {
-    if (!user) return;
+    if (!email) return;
+    setLoading(true);
+    const unsubscribeUser = listenUserByEmail(email, async (userData) => {
+      setUsuario(userData);
 
-    const q = query(
-      collection(db, "Actividades"),
-      where("usuario_id", "==", user.uid),
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setActivities(data);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Error al obtener actividades:", error);
-        setLoading(false);
+      // cleanup previous activity listeners
+      if (activitiesUnsubRef.current) {
+        try {
+          activitiesUnsubRef.current();
+        } catch (e) {
+          // ignore
+        }
+        activitiesUnsubRef.current = null;
       }
-    );
 
-    return () => unsubscribe();
-  }, [user]);
+      const actividadIds = userData?.actividades || [];
+      if (actividadIds.length === 0) {
+        setAct([]);
+        setLoading(false);
+        return;
+      }
+
+      // listen to each actividad doc and update `act` in real-time
+      activitiesUnsubRef.current = listenActividades(actividadIds, (updatedActivities) => {
+        setAct(updatedActivities);
+        setLoading(false);
+      });
+    });
+
+    return () => {
+      try {
+        unsubscribeUser();
+      } catch (e) {
+        // ignore
+      }
+      if (activitiesUnsubRef.current) {
+        try {
+          activitiesUnsubRef.current();
+        } catch (e) {
+          // ignore
+        }
+      }
+    };
+  }, [email]);
 
   if (loading) {
     return (
@@ -92,6 +112,7 @@ export default function HomeScreen({ navigation }) {
       <Text style={styles.header}>Tus Actividades</Text>
 
       {act.length === 0 ? (
+        console.log("actividades vacio"),
         <View style={styles.emptyContainer}>
           <Text style={{ color: "#6b7280", marginBottom: 10 }}>
             Aún no tienes actividades
@@ -109,6 +130,7 @@ export default function HomeScreen({ navigation }) {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingVertical: 16, width: '100%', alignItems: 'left' }}
           renderItem={({ item }) => {
+            console.log("item");
             const bg = item.color || '#4a90e2';
             const reg = (dateAct == item.fecha) ? '#4df358ff' : '#ef4444';
             const title = item.nombre || item.name || 'Actividad';
@@ -184,7 +206,7 @@ const styles = StyleSheet.create({
   },
   activityTitle: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: '600',
     marginBottom: 8,
   },
@@ -203,9 +225,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activityHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-start",
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
     marginBottom: 8,
   },
   icon: {
@@ -217,11 +240,35 @@ const styles = StyleSheet.create({
   },
   activityName: { color: "#fff", fontWeight: "700", fontSize: 18 },
   graphPlaceholder: {
-    backgroundColor: "rgba(255,255,255,0.3)",
-    height: 60,
+    width: '100%',
+    height: 70,
+    backgroundColor: 'rgba(255,255,255,0.18)',
     borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
   },
   graphText: { color: "rgba(255,255,255,0.9)", fontSize: 12 },
+  activityBox: {
+    width: '90%',
+    height: 175,
+    borderRadius: 12,
+    marginVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    // efecto de sombra para iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    // efecto de elevación para Android
+    elevation: 3,
+  },
+  icono: {
+    fontSize: 24,
+    marginRight: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    textAlign: 'center',
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 8,
+  },
 });

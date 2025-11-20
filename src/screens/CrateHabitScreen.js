@@ -11,21 +11,9 @@ import {
   ScrollView,
   SafeAreaView,
 } from "react-native";
-import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
-import firebaseConfig from "../keys.js";
-import { initializeApp } from "firebase/app";
-import {
-  getFirestore,
-  doc,
-  setDoc,
-  updateDoc,
-  arrayUnion,
-  addDoc,
-  collection,
-  serverTimestamp,
-} from "firebase/firestore";
 import { db } from "../firebase";
+import { doc, setDoc, collection, addDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { useUser } from "../context/UserContext";
 import { getUserByEmail } from "../db/userQueries";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -199,7 +187,118 @@ const DAYS_OF_WEEK = [
   { key: "Sat", label: "S" },
 ];
 
-// ---------- MODAL DE ICONO Y COLOR ----------
+// ----------------------------------------------------------------------
+// MODAL DE SELECCIÓN DE HÁBITO
+// ----------------------------------------------------------------------
+function HabitSelectorModal({ visible, onClose, onSelect }) {
+  const [search, setSearch] = useState("");
+  const [openCats, setOpenCats] = useState(new Set());
+
+  const filteredResults = {};
+  Object.keys(CATEGORIES).forEach((cat) => {
+    filteredResults[cat] = CATEGORIES[cat].filter((h) =>
+      h.toLowerCase().includes(search.toLowerCase())
+    );
+  });
+
+  useEffect(() => {
+    if (search.trim() === "") {
+      setOpenCats(new Set());
+    } else {
+      const catsWithResults = Object.keys(filteredResults).filter(
+        (cat) => filteredResults[cat].length > 0
+      );
+      setOpenCats(new Set(catsWithResults));
+    }
+  }, [search]);
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent={false}>
+      <SafeAreaView style={styles.modalFull}>
+        <View style={styles.modalHeader}>
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}>
+            <Icon name="arrow-back" size={30} color="#374151" />
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>Seleccionar Hábito</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <TextInput
+          placeholder="Buscar hábito predefinido..."
+          value={search}
+          onChangeText={setSearch}
+          style={styles.searchInput}
+          autoFocus={false}
+          clearButtonMode="while-editing"
+        />
+
+        <ScrollView style={{ flex: 1 }}>
+          {Object.keys(filteredResults).map((cat) => {
+            const habits = filteredResults[cat];
+            if (habits.length === 0) return null;
+
+            const isOpen = openCats.has(cat);
+
+            return (
+              <View key={cat} style={styles.categoryBlock}>
+                <TouchableOpacity
+                  style={[styles.categoryHeader, { backgroundColor: COLORS[cat] }]}
+                  onPress={() => {
+                    setOpenCats((prev) => {
+                      const newSet = new Set(prev);
+                      if (newSet.has(cat)) newSet.delete(cat);
+                      else newSet.add(cat);
+                      return newSet;
+                    });
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Text style={{ fontSize: 26, marginRight: 12 }}>{CATEGORY_ICONS[cat]}</Text>
+                    <Text style={styles.categoryTitle}>{cat}</Text>
+                  </View>
+                  <Icon
+                    name={isOpen ? "chevron-down" : "chevron-forward"}
+                    size={24}
+                    color="white"
+                  />
+                </TouchableOpacity>
+
+                {isOpen &&
+                  habits.map((habit) => (
+                    <TouchableOpacity
+                      key={habit}
+                      style={styles.habitOption}
+                      onPress={() => {
+                        onSelect({
+                          name: habit,
+                          icon: DEFAULT_ICONS[habit] || "✨",
+                          color: COLORS[cat],
+                        });
+                        onClose();
+                      }}
+                    >
+                      <Text style={styles.habitText}>
+                        {DEFAULT_ICONS[habit] || "✨"} {habit}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+              </View>
+            );
+          })}
+
+          {search.trim() !== "" &&
+            Object.values(filteredResults).every((arr) => arr.length === 0) && (
+              <Text style={styles.noResultsText}>
+                No se encontraron hábitos para "{search}"
+              </Text>
+            )}
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+// ------------------ MODAL DE ICONO Y COLOR (TU ORIGINAL) ------------------
 const IconColorModal = ({ visible, onClose, onSelect, current }) => {
   const [icon, setIcon] = useState(current.icon);
   const [color, setColor] = useState(current.color);
@@ -266,12 +365,14 @@ const IconColorModal = ({ visible, onClose, onSelect, current }) => {
   );
 };
 
-// ------------------ MODAL DE FRECUENCIA ------------------
+// ------------------ MODAL DE FRECUENCIA (TU ORIGINAL) ------------------
 const FrequencyModal = ({ visible, onClose, onSelect, currentDays }) => {
   const [days, setDays] = useState(currentDays);
 
   const toggleDay = (key) => {
-    setDays((prev) => (prev.includes(key) ? prev.filter((d) => d !== key) : [...prev, key]));
+    setDays((prev) =>
+      prev.includes(key) ? prev.filter((d) => d !== key) : [...prev, key]
+    );
   };
 
   const handleConfirm = () => {
@@ -330,7 +431,9 @@ const FrequencyModal = ({ visible, onClose, onSelect, currentDays }) => {
   );
 };
 
-// ------------------ PANTALLA PRINCIPAL ------------------
+// ----------------------------------------------------------------------
+// PANTALLA PRINCIPAL
+// ----------------------------------------------------------------------
 export default function CreateHabitScreen() {
   const [habitName, setHabitName] = useState("");
   const [isQuantitative, setIsQuantitative] = useState(true);
@@ -347,7 +450,7 @@ export default function CreateHabitScreen() {
   const [message, setMessage] = useState("");
   const { email } = useUser();
   const [usuario, setUsuario] = useState(null);
-  
+
   useEffect(() => {
     if (!email) return;
     (async () => {
@@ -355,6 +458,7 @@ export default function CreateHabitScreen() {
       setUsuario(data);
     })();
   }, [email]);
+
   useEffect(() => {
     return auth().onAuthStateChanged((u) => {
       setUserId(u?.uid || null);
@@ -376,31 +480,37 @@ export default function CreateHabitScreen() {
       setMessage("Usuario no autenticado.");
       return;
     }
+    if (isQuantitative && (Number(dailyGoal) <= 0 || isNaN(Number(dailyGoal)))) {
+      setMessage("La meta diaria debe ser un número mayor a 0.");
+      return;
+    }
 
     setSaving(true);
     setMessage("");
 
     try {
       const actDoc = await addDoc(collection(db, "Actividades"), {
-          name: habitName.trim(),
-          usuario_id: usuario.id,
-          trackingType: isQuantitative ? "quantitative" : "binary",
-          goal: isQuantitative ? parseFloat(dailyGoal) || 1 : 1,
-          unit: isQuantitative ? unit.trim() : "completado",
-          icon: iconColor.icon,
-          color: iconColor.color,
-          frequencyDays: selectedDays,
-          //createdAt: firestore.FieldValue.serverTimestamp(),
-        });
-      const usuarioRef = doc(db, "Usuarios", usuario.id);
-      await updateDoc(usuarioRef, {
-        actividades: arrayUnion(actDoc.id)
+        name: habitName,
+        usuario_id: usuario.id,
+        trackingType: isQuantitative ? "quantitative" : "binary",
+        goal: isQuantitative ? Number(dailyGoal) : 1,
+        unit: isQuantitative ? unit.trim() : "completado",
+        icon: iconColor.icon,
+        color: iconColor.color,
       });
+
+      await updateDoc(doc(db, "Usuarios", usuario.id), {
+        actividades: arrayUnion(actDoc.id),
+      });
+
       setMessage("¡Hábito creado con éxito!");
       setHabitName("");
+      setDailyGoal("1");
+      setUnit("veces");
+      setIconColor({ icon: "✨", color: "#4f46e5" });
+      setSelectedDays(DAYS_OF_WEEK.map((d) => d.key));
       navigation.navigate("Stats");
     } catch (err) {
-      console.error("Error guardando hábito:", err);
       setMessage(`Error al guardar: ${err.message}`);
     } finally {
       setSaving(false);
@@ -417,86 +527,80 @@ export default function CreateHabitScreen() {
   }
 
   return (
-    <>
-      <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scroll}>
-          <Text style={styles.title}>Nuevo Hábito</Text>
-          {message !== "" && <Text style={styles.message}>{message}</Text>}
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <Text style={styles.title}>Nuevo Hábito</Text>
+        {message !== "" && <Text style={styles.message}>{message}</Text>}
 
-          <Text style={styles.label}>Nombre del Hábito</Text>
-          <TextInput
-            style={styles.input}
-            value={habitName}
-            onChangeText={setHabitName}
-            placeholder="Ej: Meditar, Beber agua..."
-          />
+        <Text style={styles.label}>Hábito</Text>
+        <TouchableOpacity
+          style={[styles.input, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}
+          onPress={() => setShowHabitModal(true)}
+        >
+          <Text style={{ color: habitName ? "#000" : "#999" }}>
+            {habitName || "Seleccionar hábito..."}
+          </Text>
+          {habitName !== "" && <Text style={{ fontSize: 24 }}>{iconColor.icon}</Text>}
+        </TouchableOpacity>
 
-          <Text style={styles.label}>Icono y Color</Text>
+        <Text style={styles.label}>Icono y Color</Text>
+        <TouchableOpacity
+          style={[styles.iconButton, { backgroundColor: iconColor.color }]}
+          onPress={() => setShowIconModal(true)}
+        >
+          <Text style={styles.icon}>{iconColor.icon}</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.label}>Tipo de Seguimiento</Text>
+        <View style={styles.toggleRow}>
           <TouchableOpacity
-            style={[styles.iconButton, { backgroundColor: iconColor.color }]}
-            onPress={() => setShowIconModal(true)}
+            style={[styles.toggleButton, isQuantitative && styles.activeButton]}
+            onPress={() => setIsQuantitative(true)}
           >
-            <Text style={styles.icon}>{iconColor.icon}</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.label}>Tipo de Seguimiento</Text>
-          <View style={styles.toggleRow}>
-            <TouchableOpacity
-              style={[styles.toggleButton, isQuantitative && styles.activeButton]}
-              onPress={() => setIsQuantitative(true)}
-            >
-              <Text style={isQuantitative ? styles.activeText : styles.inactiveText}>
-                Cuantitativo
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.toggleButton, !isQuantitative && styles.activeButton]}
-              onPress={() => setIsQuantitative(false)}
-            >
-              <Text style={!isQuantitative ? styles.activeText : styles.inactiveText}>
-                Binario (Sí/No)
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {isQuantitative && (
-            <View style={styles.row}>
-              <View style={{ flex: 1, marginRight: 8 }}>
-                <Text style={styles.label}>Meta Diaria</Text>
-                <TextInput
-                  style={styles.input}
-                  value={dailyGoal}
-                  onChangeText={setDailyGoal}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Unidad</Text>
-                <TextInput style={styles.input} value={unit} onChangeText={setUnit} />
-              </View>
-            </View>
-          )}
-
-          <Text style={styles.label}>Frecuencia</Text>
-          <TouchableOpacity style={styles.input} onPress={() => setShowFreqModal(true)}>
-            <Text>
-              {selectedDays.length === 7 ? "Todos los días" : `${selectedDays.length}/semana`}
+            <Text style={isQuantitative ? styles.activeText : styles.inactiveText}>
+              Cuantitativo
             </Text>
           </TouchableOpacity>
-
           <TouchableOpacity
-            style={[styles.saveButton, saving && { backgroundColor: "#a5b4fc" }]}
-            onPress={handleCreate}
-            disabled={saving}
+            style={[styles.toggleButton, !isQuantitative && styles.activeButton]}
+            onPress={() => setIsQuantitative(false)}
           >
-            {saving ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.saveText}>Crear Hábito</Text>
-            )}
+            <Text style={!isQuantitative ? styles.activeText : styles.inactiveText}>
+              Binario (Sí/No)
+            </Text>
           </TouchableOpacity>
-        </ScrollView>
-      </SafeAreaView>
+        </View>
+
+        {isQuantitative && (
+          <View style={styles.row}>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <Text style={styles.label}>Meta Diaria</Text>
+              <TextInput
+                style={styles.input}
+                value={dailyGoal}
+                onChangeText={setDailyGoal}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Unidad</Text>
+              <TextInput style={styles.input} value={unit} onChangeText={setUnit} />
+            </View>
+          </View>
+        )}
+
+        <TouchableOpacity
+          style={[styles.saveButton, saving && { opacity: 0.7 }]}
+          onPress={handleCreate}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.saveText}>Crear Hábito</Text>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
 
       <HabitSelectorModal
         visible={showHabitModal}
@@ -521,45 +625,206 @@ export default function CreateHabitScreen() {
         onSelect={setSelectedDays}
         currentDays={selectedDays}
       />
-    </>
+    </SafeAreaView>
   );
 }
 
-// ------------------ ESTILOS ------------------
+// ----------------------------------------------------------------------
+// ESTILOS COMPLETOS (con los estilos de tus modales originales añadidos)
+// ----------------------------------------------------------------------
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   scroll: { padding: 20 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
   loadingText: { marginTop: 10, fontSize: 16, color: "#4f46e5" },
-  title: { fontSize: 24, fontWeight: "700", marginBottom: 20, color: "#111827" },
-  label: { fontSize: 16, fontWeight: "500", marginTop: 10, color: "#374151" },
-  input: { borderWidth: 1, borderColor: "#d1d5db", borderRadius: 8, padding: 10, marginTop: 4 },
-  iconButton: { width: 60, height: 60, borderRadius: 30, justifyContent: "center", alignItems: "center", marginTop: 6 },
-  icon: { fontSize: 28, color: "#fff" },
-  toggleRow: { flexDirection: "row", marginTop: 10 },
-  toggleButton: { flex: 1, padding: 10, borderWidth: 1, borderColor: "#4f46e5", alignItems: "center", borderRadius: 8, marginHorizontal: 4 },
+  title: { fontSize: 26, fontWeight: "700", marginBottom: 20, color: "#111827" },
+  label: { fontSize: 16, fontWeight: "600", marginTop: 16, marginBottom: 6, color: "#374151" },
+  input: {
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 12,
+    padding: 14,
+    backgroundColor: "#fff",
+  },
+  message: {
+    backgroundColor: "#dbeafe",
+    color: "#4338ca",
+    padding: 12,
+    borderRadius: 12,
+    textAlign: "center",
+    marginBottom: 16,
+    fontWeight: "500",
+  },
+
+  modalFull: { flex: 1, backgroundColor: "#f9fafb" },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+    backgroundColor: "#fff",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#111827",
+    flex: 1,
+    textAlign: "center",
+    marginRight: 40,
+  },
+  searchInput: {
+    marginHorizontal: 16,
+    marginVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    fontSize: 16,
+  },
+  categoryBlock: {
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#fff",
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  categoryHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  categoryTitle: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 17,
+  },
+  habitOption: {
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#f3f4f6",
+  },
+  habitText: {
+    fontSize: 16,
+    color: "#111827",
+  },
+  noResultsText: {
+    textAlign: "center",
+    paddingVertical: 50,
+    color: "#6b7280",
+    fontSize: 16,
+    fontStyle: "italic",
+  },
+
+  iconButton: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "center",
+    marginTop: 8,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  icon: { fontSize: 32 },
+
+  toggleRow: { flexDirection: "row", marginTop: 8 },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderWidth: 1.5,
+    borderColor: "#4f46e5",
+    alignItems: "center",
+    borderRadius: 12,
+    marginHorizontal: 6,
+  },
   activeButton: { backgroundColor: "#4f46e5" },
   activeText: { color: "#fff", fontWeight: "600" },
   inactiveText: { color: "#4f46e5", fontWeight: "600" },
-  row: { flexDirection: "row", justifyContent: "space-between" },
-  saveButton: { marginTop: 20, backgroundColor: "#4f46e5", paddingVertical: 14, borderRadius: 10, alignItems: "center" },
-  saveText: { color: "white", fontWeight: "700", fontSize: 16 },
-  message: { backgroundColor: "#e0e7ff", color: "#4338ca", padding: 8, borderRadius: 8, textAlign: "center", marginBottom: 10 },
-  modalContainer: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center", padding: 20 },
-  modalContent: { backgroundColor: "#fff", borderRadius: 16, padding: 20, width: "100%" },
+
+  row: { flexDirection: "row", marginTop: 8 },
+
+  saveButton: {
+    marginTop: 30,
+    backgroundColor: "#4f46e5",
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: "center",
+    elevation: 4,
+  },
+  saveText: { color: "#fff", fontWeight: "700", fontSize: 17 },
+
+  // ESTILOS DE TUS MODALES ORIGINALES
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 20,
+    width: "100%",
+  },
   modalTitle: { fontSize: 18, fontWeight: "700", marginBottom: 10, color: "#111827" },
 
   previewContainer: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
-  previewCircle: { width: 60, height: 60, borderRadius: 30, justifyContent: "center", alignItems: "center" },
+  previewCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   previewIcon: { fontSize: 28, color: "white" },
   previewLabel: { marginLeft: 10, fontSize: 16 },
 
   subTitle: { marginTop: 10, fontWeight: "600", color: "#6b7280" },
-  colorsGrid: { flexDirection: "row", flexWrap: "wrap", marginVertical: 10 },
-  colorOption: { width: 30, height: 30, borderWidth: 2, borderRadius: 15, margin: 4 },
-  iconsGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center" },
-  iconOption: { borderWidth: 1, borderColor: "#d1d5db", borderRadius: 8, padding: 6, margin: 4 },
+  colorsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginVertical: 10,
+  },
+  colorOption: {
+    width: 30,
+    height: 30,
+    borderWidth: 2,
+    borderRadius: 15,
+    margin: 4,
+  },
+  iconsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  iconOption: {
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+    padding: 6,
+    margin: 4,
+  },
   iconText: { fontSize: 22 },
+
   modalButtons: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -572,7 +837,13 @@ const styles = StyleSheet.create({
   confirmText: { color: "white", fontWeight: "600" },
 
   daysRow: { flexDirection: "row", justifyContent: "space-around", marginVertical: 10 },
-  dayButton: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center" },
+  dayButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   dayText: { fontWeight: "700" },
   summaryText: { textAlign: "center", color: "#374151", marginVertical: 10 },
 });
