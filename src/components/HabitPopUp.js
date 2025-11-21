@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
+import { React, useState } from 'react';
+import { View, Text, Modal, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 
 const HabitPopUp = ({ visible, habit, onClose, onComplete }) => {
+  const [cantidad, setCantidad] = useState(false);
   return (
     <Modal
       animationType="slide"
@@ -39,12 +40,23 @@ const HabitPopUp = ({ visible, habit, onClose, onComplete }) => {
               <Text style={styles.textStyle}>Completar</Text>
             </TouchableOpacity>
           ) : (
+            <View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}>
+                <TextInput
+                  style={styles.input}
+                  //value="Cantidad"
+                  onChangeText={setCantidad}
+                  placeholder="0"
+                />
+                <Text style={styles.label}>{habit?.unit}</Text>
+              </View>
             <TouchableOpacity
               style={[styles.button, styles.buttonComplete]}
-              onPress={onComplete}
+              onPress={() => onComplete(cantidad)}
             >
               <Text style={styles.textStyle}>Completar</Text>
             </TouchableOpacity>
+            </View>
           )}
 
         </TouchableOpacity>
@@ -132,6 +144,22 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     textAlign: 'center',
     borderRadius: 8,
+  },
+  input: {
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 10,
+    width: 'auto',
+    fontWeight: '600',
+  },
+  label: {
+    fontWeight: '600',
+    marginBottom: 6,
+    marginTop: 10,
+    fontSize: 20,
+    color: "white",
   },
 });
 

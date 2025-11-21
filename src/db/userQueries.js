@@ -1,14 +1,44 @@
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 
+
 export async function getUserByEmail(email) {
-  const q = query(collection(db, "Usuarios"), where("correo", "==", email));
-  const querySnapshot = await getDocs(q);
-  let user = null;
-  querySnapshot.forEach((doc) => {
-    user = { id: doc.id, ...doc.data() };
-  });
-  return user;
+  if (!email) return null;
+  try {
+    const q = query(collection(db, "Usuarios"), where("correo", "==", email));
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) return null;
+    const docSnap = querySnapshot.docs[0];
+    return { id: docSnap.id, ...docSnap.data() };
+  } catch (err) {
+    console.error('getUserByEmail failed', err);
+    return null;
+  }
+}
+
+
+export function listenUserByEmail(email, onChange) {
+  if (!email || typeof onChange !== 'function') {
+    console.warn('listenUserByEmail requires an email and a callback');
+    return () => {};
+  }
+  const q = query(collection(db, 'Usuarios'), where('correo', '==', email));
+  const unsub = onSnapshot(
+    q,
+    (snapshot) => {
+      if (snapshot.empty) {
+        onChange(null);
+        return;
+      }
+      const docSnap = snapshot.docs[0];
+      onChange({ id: docSnap.id, ...docSnap.data() });
+    },
+    (err) => {
+      console.error('listenUserByEmail error', err);
+      onChange(null);
+    }
+  );
+  return unsub;
 }
 
 export async function getActividades(ids) {
@@ -27,6 +57,69 @@ export async function getActividades(ids) {
     }
   }
   return activities;
+}
+
+export async function getActividadesPublicas(ids) {
+  if (!ids) return [];
+  const idsArray = Array.isArray(ids) ? ids : [ids];
+  const activities = [];
+  for (const id of idsArray) {
+    try {
+      const docRef = doc(db, "Actividades", id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap && docSnap.exists && docSnap.exists()) {
+        const activity = { id: docSnap.id, ...docSnap.data() };
+        if (activity.publico) {
+          activities.push(activity);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch activity', id, err);
+    }
+  }
+  return activities;
+}
+
+export function listenActividades(ids, onChange) {
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    if (typeof onChange === 'function') onChange([]);
+    return () => {};
+  }
+  const unsubscribes = [];
+  const activitiesMap = new Map();
+
+  ids.forEach((id) => {
+    try {
+      const ref = doc(db, 'Actividades', id);
+      const unsub = onSnapshot(
+        ref,
+        (snap) => {
+          if (snap.exists()) {
+            activitiesMap.set(snap.id, { id: snap.id, ...snap.data() });
+          } else {
+            activitiesMap.delete(id);
+          }
+          if (typeof onChange === 'function') onChange(Array.from(activitiesMap.values()));
+        },
+        (err) => {
+          console.error('listenActividades error for', id, err);
+        }
+      );
+      unsubscribes.push(unsub);
+    } catch (err) {
+      console.error('listenActividades setup failed for', id, err);
+    }
+  });
+
+  return () => {
+    unsubscribes.forEach((u) => {
+      try {
+        u();
+      } catch (e) {
+        // ignore
+      }
+    });
+  };
 }
 
 export async function getAmigos(ids) {
