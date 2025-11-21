@@ -11,6 +11,8 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import RachaScreen from './src/screens/RachaScreen';
+import ActivityDetailScreen from './src/screens/ActivityDetailScreen';
+import FriendProfileScreen from './src/screens/FriendProfileScreen';
 
 import { StreakProvider } from './src/context/StreakContext';
 import StreakHeader from './src/components/StreakHeader';
@@ -68,6 +70,24 @@ const App = () => {
                   name="Racha"
                   component={RachaScreen}
                   options={{ title: 'Racha de Hábitos' }}
+                />
+
+                <Stack.Screen
+                  name="ActivityDetailScreen"
+                  component={ActivityDetailScreen}
+                  options={{
+                    title: 'Detalle de Actividad',
+                    headerShown: true,
+                  }}
+                />
+
+                <Stack.Screen
+                  name="FriendProfileScreen"
+                  component={FriendProfileScreen}
+                  options={{
+                    title: 'Perfil de Amigo',
+                    headerShown: true,
+                  }}
                 />
 
               {/* Pantalla EditProfileScreen del primer código, ahora dentro de la lógica de usuario */}

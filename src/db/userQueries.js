@@ -59,6 +59,27 @@ export async function getActividades(ids) {
   return activities;
 }
 
+export async function getActividadesPublicas(ids) {
+  if (!ids) return [];
+  const idsArray = Array.isArray(ids) ? ids : [ids];
+  const activities = [];
+  for (const id of idsArray) {
+    try {
+      const docRef = doc(db, "Actividades", id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap && docSnap.exists && docSnap.exists()) {
+        const activity = { id: docSnap.id, ...docSnap.data() };
+        if (activity.publico) {
+          activities.push(activity);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch activity', id, err);
+    }
+  }
+  return activities;
+}
+
 export function listenActividades(ids, onChange) {
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
     if (typeof onChange === 'function') onChange([]);

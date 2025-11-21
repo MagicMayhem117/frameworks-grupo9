@@ -24,7 +24,7 @@ const MyPopup = ({ visible, onClose, children }) => {
   );
 };
 
-const HomeScreen = () => {
+const HomeScreen = ({ navigation }) => {
   const { email } = useUser();
   const [usuario, setUsuario] = useState(null);
   const [usuarios, setUsuarios] = useState(null);
@@ -239,14 +239,19 @@ const HomeScreen = () => {
             const title = item.nombre || 'Amigo';
             const img = findProfile(item.img_path) || require('../assets/profiles/perfil1.webp');
             return (
-              <View style={[styles.activityBox, { backgroundColor: bg }]}>
+              <TouchableOpacity
+                style={[styles.activityBox, { backgroundColor: bg }]}
+                onPress={() =>
+                  navigation.navigate("FriendProfileScreen", { profile: item })
+                }
+              >
                 <View style={styles.activityHeader}>
                   <View style={styles.avatar}>
                     <Image source={img} style={styles.backgroundImage}></Image>
                   </View>
                   <Text style={styles.activityTitle}>{title}</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           }}
         />

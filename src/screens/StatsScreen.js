@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -7,8 +7,9 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
+import { useUser } from "../context/UserContext";
 import auth from "@react-native-firebase/auth";
-import { initializeApp } from "firebase/app";
+import { listenUserByEmail, listenActividades } from "../db/userQueries";
 import {
   getFirestore,
   collection,
@@ -17,45 +18,62 @@ import {
   orderBy,
   onSnapshot,
 } from "firebase/firestore";
-import firebaseConfig from "../keys.js";
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+import { db } from "../firebase";
 
 const StatsScreen = ({ navigation }) => {
+  const { email } = useUser();
+  const [usuario, setUsuario] = useState(null);
   const [habits, setHabits] = useState([]);
   const [loading, setLoading] = useState(true);
-  const user = auth().currentUser;
+  const activitiesUnsubRef = useRef(null);
 
   useEffect(() => {
-    if (!user) {
-      setHabits([]);
-      setLoading(false);
-      return;
-    }
+      if (!email) return;
+      setLoading(true);
+      const unsubscribeUser = listenUserByEmail(email, async (userData) => {
+        setUsuario(userData);
+  
+        // limpia los listeners previos
+        if (activitiesUnsubRef.current) {
+          try {
+            activitiesUnsubRef.current();
+          } catch (e) {
+            console.log(e);
+          }
+          activitiesUnsubRef.current = null;
+        }
+  
+        const actividadIds = userData?.actividades || [];
+        console.log("fhdjgk");
+        if (actividadIds.length === 0) {
+          setHabits([]);
+          setLoading(false);
+          return;
+        }
+        console.log("hgfj");
+        // escucha cada hábito
+        activitiesUnsubRef.current = listenActividades(actividadIds, (updatedActivities) => {
+          setHabits(updatedActivities);
+          setLoading(false);
+        });
+      });
 
-    // ✅ Escucha en tiempo real los hábitos del usuario autenticado
-    const q = query(
-      collection(db, "Actividades"),
-      where("usuario_id", "==", user.uid),
-      orderBy("createdAt", "desc")
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        setHabits(data);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("onSnapshot error:", error);
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [user]);
+      return () => {
+        try {
+          console.log("Try")
+          unsubscribeUser();
+        } catch (e) {
+          console.log(e);
+        }
+        if (activitiesUnsubRef.current) {
+          try {
+            activitiesUnsubRef.current();
+          } catch (e) {
+            // ignore
+          }
+        }
+      };
+    }, [email]);
 
   if (loading) {
     return (
@@ -86,7 +104,12 @@ const StatsScreen = ({ navigation }) => {
             data={habits}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <View style={[styles.card, { borderLeftColor: item.color || "#4f46e5" }]}>
+              <TouchableOpacity
+                style={[styles.card, { borderLeftColor: item.color || "#4f46e5" }]}
+                onPress={() =>
+                  navigation.navigate("ActivityDetailScreen", { activity: item })
+                }
+              >
                 <Text style={styles.icon}>{item.icon || "🔔"}</Text>
                 <View style={styles.info}>
                   <Text style={styles.name}>{item.name}</Text>
@@ -96,7 +119,7 @@ const StatsScreen = ({ navigation }) => {
                       : "Completado (Sí/No)"}
                   </Text>
                 </View>
-              </View>
+              </TouchableOpacity>
             )}
           />
 
