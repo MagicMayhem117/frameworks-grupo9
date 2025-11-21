@@ -7,13 +7,14 @@ import {
   StyleSheet,
   Alert,
   StatusBar,
+  Image, // Importamos Image
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import MiLogoSVG from '../assets/LogoProvisional.svg'; // Asegúrate de que la ruta sea correcta
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useUser } from "../context/UserContext";
 
+// Función para Google Sign-In
 async function onGoogleButtonPress() {
   try {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
@@ -47,8 +48,13 @@ const LoginScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#121212" barStyle="light-content" />
-      <MiLogoSVG width={80} height={80} fill="#FFF" style={styles.logo} />
-      <Text style={styles.title}>Inicias sesión</Text>
+
+      <Image
+        source={require('../assets/Logo_0.png')}
+        style={styles.logo}
+      />
+
+      <Text style={styles.title}>Inicia sesión</Text>
 
       {/* Campo de correo */}
       <View style={styles.inputContainer}>
@@ -107,17 +113,20 @@ const LoginScreen = ({ navigation }) => {
   );
 };
 
-// 🎨 Estilos
+// Estilos
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#000000',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
   },
   logo: {
     marginBottom: 30,
+    width: 140,  // Definimos el ancho explícitamente
+    height: 140, // Definimos la altura explícitamente
+    resizeMode: 'contain', // Mantiene la proporción de la imagen
   },
   title: {
     fontSize: 32,
