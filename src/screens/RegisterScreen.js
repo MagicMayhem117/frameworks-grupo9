@@ -7,10 +7,10 @@ import {
   StyleSheet,
   Alert,
   StatusBar,
+  Image, // Importamos Image
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import MiLogoSVG from '../assets/LogoProvisional.svg'; // Asegúrate de que la ruta sea correcta
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { db } from "../firebase";
 import { doc, setDoc, collection, addDoc } from "firebase/firestore";
@@ -28,7 +28,6 @@ async function onGoogleButtonPress() {
   }
 }
 
-
 const RegisterScreen = ({ navigation }) => {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
@@ -36,7 +35,6 @@ const RegisterScreen = ({ navigation }) => {
   const [verifyPassword, setVerifyPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showVerifyPassword, setShowVerifyPassword] = useState(false);
-
 
   // Using shared db from src/firebase
 
@@ -76,7 +74,13 @@ const RegisterScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#121212" barStyle="light-content" />
-      <MiLogoSVG width={80} height={80} fill="#FFF" style={styles.logo} />
+
+      {/* Reemplazo del SVG por Image */}
+      <Image
+        source={require('../assets/Logo_0.png')}
+        style={styles.logo}
+      />
+
       <Text style={styles.title}>Crear Cuenta</Text>
 
       <View style={styles.inputContainer}>
@@ -100,42 +104,40 @@ const RegisterScreen = ({ navigation }) => {
         />
       </View>
       <View style={styles.inputContainer}>
-  <TextInput
-    style={styles.input}
-    placeholder="Contraseña"
-    placeholderTextColor="#888"
-    value={password}
-    onChangeText={setPassword}
-    secureTextEntry={!showPassword}
-  />
-  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-    <Icon
-      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-      size={22}
-      color="#888"
-    />
-  </TouchableOpacity>
-</View>
+        <TextInput
+          style={styles.input}
+          placeholder="Contraseña"
+          placeholderTextColor="#888"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+        />
+        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+          <Icon
+            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+            size={22}
+            color="#888"
+          />
+        </TouchableOpacity>
+      </View>
 
-<View style={styles.inputContainer}>
-  <TextInput
-    style={styles.input}
-    placeholder="Verificar Contraseña"
-    placeholderTextColor="#888"
-    value={verifyPassword}
-    onChangeText={setVerifyPassword}
-    secureTextEntry={!showVerifyPassword}
-  />
-  <TouchableOpacity onPress={() => setShowVerifyPassword(!showVerifyPassword)} style={styles.eyeButton}>
-    <Icon
-      name={showVerifyPassword ? 'eye-off-outline' : 'eye-outline'}
-      size={22}
-      color="#888"
-    />
-  </TouchableOpacity>
-</View>
-
-
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Verificar Contraseña"
+          placeholderTextColor="#888"
+          value={verifyPassword}
+          onChangeText={setVerifyPassword}
+          secureTextEntry={!showVerifyPassword}
+        />
+        <TouchableOpacity onPress={() => setShowVerifyPassword(!showVerifyPassword)} style={styles.eyeButton}>
+          <Icon
+            name={showVerifyPassword ? 'eye-off-outline' : 'eye-outline'}
+            size={22}
+            color="#888"
+          />
+        </TouchableOpacity>
+      </View>
 
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Crear Cuenta</Text>
@@ -160,13 +162,16 @@ const RegisterScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#121212',
+        backgroundColor: '#000000',
         alignItems: 'center',
         justifyContent: 'center',
         padding: 20,
     },
     logo: {
         marginBottom: 20,
+        width: 140,  // Ancho explícito para la imagen PNG
+        height: 140, // Alto explícito para la imagen PNG
+        resizeMode: 'contain',
     },
     title: {
         fontSize: 32,
