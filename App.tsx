@@ -69,7 +69,7 @@ const App = () => {
                 <Stack.Screen
                   name="Racha"
                   component={RachaScreen}
-                  options={{ title: 'Racha de Hábitos' }}
+                  options={{ headerShown: false }}
                 />
 
                 <Stack.Screen

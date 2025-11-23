@@ -529,7 +529,6 @@ export default function CreateHabitScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.title}>Nuevo Hábito</Text>
         {message !== "" && <Text style={styles.message}>{message}</Text>}
 
         <Text style={styles.label}>Hábito</Text>
