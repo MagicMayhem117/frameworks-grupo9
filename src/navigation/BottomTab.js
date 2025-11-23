@@ -36,7 +36,8 @@ export const BottomTab = () => {
                 name="Comunidad"
                 component={ComunityScreen}
                 options={{
-                    headerShown: false,
+                    title: 'Amigos',
+                    headerRight: () => <StreakHeader />,
                     tabBarIcon: ({ color, size }) => (
                         <Icon name="users" color={color} size={size} />
                     ),
@@ -50,8 +51,6 @@ export const BottomTab = () => {
                 options={{
                     title: 'Mis Hábitos',
                     headerRight: () => <StreakHeader />,
-
-                    headerRight: () => <StreakHeader />,
                     tabBarIcon: ({ color, size }) => (
                         <Icon name="home" color={color} size={size} />
                     ),
@@ -63,7 +62,7 @@ export const BottomTab = () => {
                 component={CreateHabitScreen}
                 options={{
                     title: 'Nuevo Hábito',
-
+                    headerRight: () => <StreakHeader />,
                     tabBarIcon: ({ color, size }) => (
                         <Icon name="plus-circle" color={color} size={size} />
                     ),
@@ -75,7 +74,7 @@ export const BottomTab = () => {
                 component={StatsScreen}
                 options={{
                     title: 'Estadísticas',
-
+                    headerRight: () => <StreakHeader />,
                     tabBarIcon: ({ color, size }) => (
                         <Icon name="bar-chart" color={color} size={size} />
                     ),
@@ -87,7 +86,7 @@ export const BottomTab = () => {
                 component={SettingsScreen}
                 options={{
                     title: 'Ajustes',
-
+                    headerRight: () => <StreakHeader />,
                     tabBarIcon: ({ color, size }) => (
                         <Icon name="cog" color={color} size={size} />
                     ),

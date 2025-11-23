@@ -1,22 +1,36 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, FlatList, Image, TextInput, TouchableOpacity, Modal, Alert } from 'react-native';
-import auth from '@react-native-firebase/auth';
+import { View, Text, StyleSheet, FlatList, Image, TextInput, TouchableOpacity, Modal, Alert, SafeAreaView, StatusBar } from 'react-native';
 import { useUser } from "../context/UserContext";
 import { getUserByEmail, getAmigos, getUsuarios } from "../db/userQueries";
 import { db } from "../firebase";
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { findProfile } from "../components/FindProfileImg.js";
 
+//Colores y Constantes
+const COLORS = {
+  primary: '#5A4DF3',
+  background: '#F7F9FC',
+  card: '#FFFFFF',
+  textPrimary: '#1A202C',
+  textSecondary: '#718096',
+  success: '#38A169',
+  danger: '#E53E3E',
+  inputBg: '#EDF2F7',
+  border: '#E2E8F0'
+};
+
 const MyPopup = ({ visible, onClose, children }) => {
   return (
     <Modal
-      animationType="slide" // or "fade", "none"
+      animationType="fade"
       transparent={true}
       visible={visible}
-      onRequestClose={onClose} // Handles hardware back button on Android
+      onRequestClose={onClose}
     >
       <View style={styles.centeredView}>
+        <View style={styles.modalOverlay} onTouchEnd={onClose} />
         <View style={styles.modalView}>
+          <View style={styles.modalDragIndicator} />
           {children}
         </View>
       </View>
@@ -32,21 +46,17 @@ const HomeScreen = ({ navigation }) => {
   const [amigos, setAmigos] = useState([]);
   const [solicitudes, setSolicitudes] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
-
   const [modalVisible, setModalVisible] = useState(false);
-  
+
   const openPopup = async () => {
     setModalVisible(true);
+    // Cargar usuarios iniciales si busc está vacío o lleno
     const usDataArray = await getUsuarios(busc);
-    console.log('Usuarios loaded', usDataArray);
     setUsuarios(usDataArray);
   };
 
   const acceptRequest = async (requesterId, requesterObj) => {
-    if (!usuario || !usuario.id) {
-      Alert.alert('Error', 'Usuario actual no cargado');
-      return;
-    }
+    if (!usuario || !usuario.id) return Alert.alert('Error', 'Usuario actual no cargado');
     try {
       const currentRef = doc(db, 'Usuarios', usuario.id);
       const requesterRef = doc(db, 'Usuarios', requesterId);
@@ -54,58 +64,42 @@ const HomeScreen = ({ navigation }) => {
         amigos: arrayUnion(requesterId),
         solicitudes: arrayRemove(requesterId)
       });
-      await updateDoc(requesterRef, {
-        amigos: arrayUnion(usuario.id)
-      });
+      await updateDoc(requesterRef, { amigos: arrayUnion(usuario.id) });
+
       setSolicitudes(prev => prev.filter(u => u.id !== requesterId));
       setAmigos(prev => (requesterObj ? [...prev, requesterObj] : prev));
-      Alert.alert('Solicitud aceptada', 'Ahora son amigos.');
+      Alert.alert('¡Genial!', 'Ahora son amigos.');
     } catch (err) {
-      console.error('acceptRequest failed', err);
+      console.error(err);
       Alert.alert('Error', 'No se pudo aceptar la solicitud.');
     }
   };
 
   const rejectRequest = async (requesterId) => {
-    if (!usuario || !usuario.id) {
-      Alert.alert('Error', 'Usuario actual no cargado');
-      return;
-    }
+    if (!usuario || !usuario.id) return Alert.alert('Error', 'Usuario actual no cargado');
     try {
       const currentRef = doc(db, 'Usuarios', usuario.id);
-      await updateDoc(currentRef, {
-        solicitudes: arrayRemove(requesterId)
-      });
+      await updateDoc(currentRef, { solicitudes: arrayRemove(requesterId) });
       setSolicitudes(prev => prev.filter(u => u.id !== requesterId));
-      Alert.alert('Solicitud rechazada', 'La solicitud ha sido eliminada.');
     } catch (err) {
-      console.error('rejectRequest failed', err);
-      Alert.alert('Error', 'No se pudo rechazar la solicitud.');
+      console.error(err);
     }
   };
 
   const sendFriendRequest = async (targetId) => {
-    if (!usuario || !usuario.id) {
-      Alert.alert('Error', 'Usuario actual no cargado');
-      return;
-    }
+    if (!usuario || !usuario.id) return Alert.alert('Error', 'Usuario actual no cargado');
     try {
-      // add current user's id to target user's 'solicitudes' array
       const targetRef = doc(db, 'Usuarios', targetId);
-      await updateDoc(targetRef, {
-        solicitudes: arrayUnion(usuario.id)
-      });
+      await updateDoc(targetRef, { solicitudes: arrayUnion(usuario.id) });
       setSentRequests(prev => prev.includes(targetId) ? prev : [...prev, targetId]);
-      Alert.alert('Solicitud enviada', 'Se ha enviado una solicitud de amistad.');
+      Alert.alert('Enviada', 'Solicitud de amistad enviada.');
     } catch (err) {
-      console.error('sendFriendRequest failed', err);
+      console.error(err);
       Alert.alert('Error', 'No se pudo enviar la solicitud.');
     }
   };
 
-  const closePopup = () => {
-    setModalVisible(false);
-  };
+  const closePopup = () => setModalVisible(false);
 
   useEffect(() => {
     async function fetchUser() {
@@ -114,18 +108,16 @@ const HomeScreen = ({ navigation }) => {
         setUsuario(userData);
         const amigosIds = userData?.amigos || [];
         const soliIds = userData?.solicitudes || [];
+
         if (amigosIds.length > 0) {
-          console.log(amigosIds);
           const amDataArray = await getAmigos(amigosIds);
-          console.log('Friends loaded', amDataArray);
           setAmigos(amDataArray);
         } else {
           setAmigos([]);
         }
+
         if (soliIds.length > 0) {
-          console.log(soliIds);
           const solDataArray = await getAmigos(soliIds);
-          console.log('Solicitudes loaded', solDataArray);
           setSolicitudes(solDataArray);
         } else {
           setSolicitudes([]);
@@ -134,277 +126,356 @@ const HomeScreen = ({ navigation }) => {
     }
     fetchUser();
   }, [email]);
-  
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>¡Bienvenido a DailyTrack!</Text>
-      <View style={styles.busquedaHeader}>
-        <View style={styles.busqueda}>
-          <TouchableOpacity onPress={openPopup}>
-            <Image source={require('../assets/busqueda.png')} style={styles.busquedaImage}></Image>
-          </TouchableOpacity>
+
+  // Renderizado de cada item
+  const renderUserItem = ({ item, isFriendList, isRequest, isSearch }) => {
+    const title = item.nombre || 'Usuario';
+    const img = findProfile(item.img_path) || require('../assets/profiles/perfil1.webp');
+    const alreadySent = sentRequests.includes(item.id) || (usuario?.solicitudes || []).includes(item.id);
+
+    return (
+      <View style={styles.card}>
+        <View style={styles.cardContent}>
+          <Image source={img} style={styles.avatar} />
+          <View style={styles.textContainer}>
+            <Text style={styles.userName}>{title}</Text>
+            {isFriendList && <Text style={styles.userSubtitle}>Amigo</Text>}
+            {isSearch && alreadySent && <Text style={[styles.userSubtitle, {color: COLORS.success}]}>Solicitud enviada</Text>}
+          </View>
         </View>
-          <TextInput
-            style={styles.input}
-            value={busc}
-            onChangeText={setBusc}
-            placeholder="Buscar..."
-          />
-          <MyPopup visible={modalVisible} onClose={closePopup}>
-            <Text style={styles.modalTitle}>Usuarios</Text>
-            {!usuarios || usuarios.length === 0 ? (
-              <Text style={{ fontSize: 16, marginBottom: 20 }}>Cargando usuarios...</Text>
+
+        {/* Botones de Accion */}
+        <View style={styles.actionContainer}>
+          {isSearch && (
+            <TouchableOpacity
+              style={[styles.button, alreadySent ? styles.buttonDisabled : styles.buttonPrimary]}
+              onPress={() => !alreadySent && sendFriendRequest(item.id)}
+              disabled={alreadySent}
+            >
+              <Text style={styles.buttonTextSmall}>{alreadySent ? 'Pendiente' : 'Agregar'}</Text>
+            </TouchableOpacity>
+          )}
+
+          {isRequest && (
+            <View style={styles.row}>
+              <TouchableOpacity style={[styles.button, styles.buttonSuccess]} onPress={() => acceptRequest(item.id, item)}>
+                <Text style={styles.buttonTextSmall}>Aceptar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.button, styles.buttonDanger]} onPress={() => rejectRequest(item.id)}>
+                <Text style={styles.buttonTextSmall}>X</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {isFriendList && (
+             <TouchableOpacity onPress={() => navigation.navigate("FriendProfileScreen", { profile: item })}>
+                <Text style={{color: COLORS.primary, fontWeight: '600'}}>Ver perfil</Text>
+             </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <View style={styles.container}>
+
+        {/* Header con Buscador */}
+        <View style={styles.headerContainer}>
+          <Text style={styles.screenTitle}>Social</Text>
+          <View style={styles.searchBarContainer}>
+            <TextInput
+              style={styles.searchInput}
+              value={busc}
+              onChangeText={setBusc}
+              placeholder="Buscar personas..."
+              placeholderTextColor={COLORS.textSecondary}
+            />
+            <TouchableOpacity style={styles.searchButton} onPress={openPopup}>
+              {/* Asumiendo que tienes el icono, si no usa un texto temporal o Icon de librería */}
+              <Image source={require('../assets/busqueda.png')} style={styles.searchIcon} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.listContainer}>
+          {/* Seccion Solicitudes */}
+          {solicitudes.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Solicitudes de Amistad</Text>
+              <FlatList
+                data={solicitudes}
+                keyExtractor={(item) => item.id}
+                renderItem={(props) => renderUserItem({ ...props, isRequest: true })}
+                scrollEnabled={false} // Para que scrollee con la lista principal si fuera ScrollView
+              />
+            </View>
+          )}
+
+          {/* Seccion Amigos */}
+          <View style={[styles.section, { flex: 1 }]}>
+            <Text style={styles.sectionTitle}>Mis Amigos ({amigos.length})</Text>
+            {amigos.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>Aún no tienes amigos agregados.</Text>
+              </View>
             ) : (
               <FlatList
-                data={usuarios}
+                data={amigos}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={{ paddingVertical: 16, width: '100%', alignItems: 'left' }}
-                renderItem={({ item }) => {
-                  const bg = '#d4dee9ff';
-                  const title = item.nombre || 'Usuario';
-                  const img = findProfile(item.img_path) || require('../assets/profiles/perfil1.webp');
-                  const alreadySent = sentRequests.includes(item.id) || (usuario?.solicitudes || []).includes(item.id);
-                  return (
-                    <View style={[styles.activityBox, { backgroundColor: bg }]}>
-                      <View style={styles.activityHeader}>
-                        <View style={styles.avatar}>
-                          <Image source={img} style={styles.backgroundImage}></Image>
-                        </View>
-                        <Text style={styles.activityTitle}>{title}</Text>
-                        <TouchableOpacity
-                          style={[styles.soliButtons, alreadySent && styles.soliButtonsDisabled]}
-                          onPress={() => !alreadySent && sendFriendRequest(item.id)}
-                        >
-                          <Text style={styles.saveButtonText}>{alreadySent ? 'Enviada' : 'Enviar Solicitud'}</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  );
-                }}
+                renderItem={(props) => renderUserItem({ ...props, isFriendList: true })}
+                contentContainerStyle={{ paddingBottom: 20 }}
+                showsVerticalScrollIndicator={false}
               />
             )}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}>
-              <TouchableOpacity style={styles.picButtons} onPress={closePopup}>
-                <Text style={styles.saveButtonText}>Cancelar</Text>
-              </TouchableOpacity>
-              {/*<TouchableOpacity style={styles.picButtons} onPress={handleSaveProfileImage}>
-                <Text style={styles.saveButtonText}>Guardar</Text>
-              </TouchableOpacity>*/}
+          </View>
+        </View>
+
+        {/* MODAL DE BUSQUEDA */}
+        <MyPopup visible={modalVisible} onClose={closePopup}>
+          <Text style={styles.modalTitle}>Buscar Usuarios</Text>
+
+          {/* Replicar input dentro del modal si se desea buscar en tiempo real aqui */}
+          <TextInput
+              style={[styles.searchInput, { width: '100%', marginBottom: 15 }]}
+              value={busc}
+              onChangeText={async (text) => {
+                setBusc(text);
+                const res = await getUsuarios(text);
+                setUsuarios(res);
+              }}
+              placeholder="Escribe un nombre..."
+          />
+
+          {!usuarios || usuarios.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No se encontraron usuarios.</Text>
             </View>
-          </MyPopup>
+          ) : (
+            <FlatList
+              data={usuarios}
+              keyExtractor={(item) => item.id}
+              renderItem={(props) => renderUserItem({ ...props, isSearch: true })}
+              style={{ width: '100%' }}
+            />
+          )}
+
+          <TouchableOpacity style={styles.closeButton} onPress={closePopup}>
+            <Text style={styles.closeButtonText}>Cerrar</Text>
+          </TouchableOpacity>
+        </MyPopup>
+
       </View>
-      <Text style={styles.subtitle}>Solicitudes</Text>
-      {solicitudes.length === 0 ? (
-        <Text style={{ fontSize: 16, marginBottom: 20 }}>No hay solicitudes.</Text>
-      ) : (
-        <FlatList
-          data={solicitudes}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingVertical: 16, width: '100%', alignItems: 'left' }}
-          renderItem={({ item }) => {
-            const bg = '#d4dee9ff';
-            const title = item.nombre || 'Amigo';
-            const img = findProfile(item.img_path) || require('../assets/profiles/perfil1.webp');
-            return (
-              <View style={[styles.activityBox, { backgroundColor: bg }]}>
-                <View style={styles.activityHeader}>
-                  <View style={styles.avatar}>
-                    <Image source={img} style={styles.backgroundImage}></Image>
-                  </View>
-                  <Text style={styles.activityTitle}>{title}</Text>
-                  <View style={{ marginLeft: 'auto', flexDirection: 'row' }}>
-                    <TouchableOpacity style={[styles.soliButtons, styles.acceptButton]} onPress={() => acceptRequest(item.id, item)}>
-                      <Text style={styles.saveButtonText}>Aceptar</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.soliButtons, styles.rejectButton]} onPress={() => rejectRequest(item.id)}>
-                      <Text style={styles.saveButtonText}>Rechazar</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            );
-          }}
-        />
-      )}
-      <Text style={styles.subtitle}>Amigos</Text>
-      {amigos.length === 0 ? (
-        <Text style={{ fontSize: 16, marginBottom: 20 }}>Cargando amigos...</Text>
-      ) : (
-        <FlatList
-          data={amigos}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingVertical: 16, width: '100%', alignItems: 'left' }}
-          renderItem={({ item }) => {
-            const bg = '#d4dee9ff';
-            const title = item.nombre || 'Amigo';
-            const img = findProfile(item.img_path) || require('../assets/profiles/perfil1.webp');
-            return (
-              <TouchableOpacity
-                style={[styles.activityBox, { backgroundColor: bg }]}
-                onPress={() =>
-                  navigation.navigate("FriendProfileScreen", { profile: item })
-                }
-              >
-                <View style={styles.activityHeader}>
-                  <View style={styles.avatar}>
-                    <Image source={img} style={styles.backgroundImage}></Image>
-                  </View>
-                  <Text style={styles.activityTitle}>{title}</Text>
-                </View>
-              </TouchableOpacity>
-            );
-          }}
-        />
-      )}
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'left', padding: 16 },
-  title: { fontSize: 22, marginBottom: 20 },
-  subtitle: { fontSize: 18, marginBottom: 20 },
-  activityBox: {
-    width: '100%',
-    height: 100,
-    borderRadius: 12,
-    marginVertical: 10,
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  // Header & Search
+  headerContainer: {
+    marginBottom: 20,
+  },
+  screenTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
+    marginBottom: 15,
+  },
+  searchBarContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    // efecto de sombra para iOS
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    // Sombra sutil
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 5,
+    color: COLORS.textPrimary,
+  },
+  searchButton: {
+    padding: 8,
+    backgroundColor: COLORS.inputBg,
+    borderRadius: 8,
+  },
+  searchIcon: {
+    width: 20,
+    height: 20,
+    tintColor: COLORS.primary,
+  },
+  // Listas y Secciones
+  listContainer: {
+    flex: 1,
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 12,
+    marginLeft: 4,
+  },
+  emptyState: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    color: COLORS.textSecondary,
+    fontSize: 15,
+  },
+  // Tarjetas de Usuario (Cards)
+  card: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 12,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    // Sombra
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
     shadowRadius: 4,
-    // efecto de elevación para Android
     elevation: 3,
   },
-  activityTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  activityHeader: {
-    width: '100%',
+  cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    marginBottom: 8,
-  },
-  busquedaHeader: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    marginBottom: 8,
-  },
-  graphPlaceholder: {
-    width: '100%',
-    height: 70,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderRadius: 8,
-  },
-  icono: {
-    fontSize: 24,
-    marginRight: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    textAlign: 'center',
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 8,
+    flex: 1,
   },
   avatar: {
-    width: 55,
-    height: 55,
-    borderRadius: 30,
-    overflow: 'hidden',
-    alignItems: 'center',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+    backgroundColor: COLORS.inputBg,
+  },
+  textContainer: {
     justifyContent: 'center',
-    marginRight: 15,
-  },
-  busqueda: {
-    width: 30,
-    height: 30,
-    borderRadius: 20,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 15,
-    marginTop: 15,
-    marginBottom: 15,
-    marginLeft: 20,
-  },
-  backgroundImage: {
     flex: 1,
-    width: 55,
-    height: 55,
-    borderRadius: 30,
   },
-  busquedaImage: {
-    flex: 1,
-    width: 30,
-    height: 30,
-    borderRadius: 20,
-  },
-  input: {
-    backgroundColor: '#f8f9fd',
-    borderRadius: 10,
-    width: '80%',
-    padding: 12,
+  userName: {
     fontSize: 16,
-    marginRight: 15,
-    marginTop: 15,
-    marginBottom: 15,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
   },
-  picButtons: {
-    backgroundColor: '#5A4DF3',
-    paddingVertical: 14,
-    padding: 14,
-    borderRadius: 12,
+  userSubtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  // Botones
+  actionContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
-    flexDirection: 'row', 
-    justifyContent: 'space-between',
   },
-  soliButtons: {
-    backgroundColor: '#4df358ff',
+  row: {
+    flexDirection: 'row',
+  },
+  button: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 12,
-    marginTop: 8,
-    marginLeft: 'auto',
-    justifyContent: 'center',
+    borderRadius: 8,
+    marginLeft: 8,
+    minWidth: 70,
     alignItems: 'center',
   },
-  soliButtonsDisabled: {
-    backgroundColor: '#9ee7c7',
+  buttonPrimary: {
+    backgroundColor: COLORS.primary,
   },
-  acceptButton: {
-    backgroundColor: '#10b981',
-    marginRight: 8,
+  buttonSuccess: {
+    backgroundColor: COLORS.success,
+    paddingHorizontal: 10,
+    minWidth: 60,
   },
-  rejectButton: {
-    backgroundColor: '#ef4444',
+  buttonDanger: {
+    backgroundColor: COLORS.danger,
+    paddingHorizontal: 10,
+    minWidth: 40, // Boton X mas pequeño
   },
-  saveButtonText: {
+  buttonDisabled: {
+    backgroundColor: COLORS.inputBg,
+  },
+  buttonTextSmall: {
     color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  // Modal Styles
+  centeredView: {
+    flex: 1,
+    justifyContent: 'flex-end', // Modal aparece abajo (tipo bottom sheet) o centro
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)', // Fondo oscuro semitransparente
   },
   modalView: {
     backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    width: '100%',
-    height: '100%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    height: '80%', // Ocupa el 80% de la pantalla
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalDragIndicator: {
+    width: 40,
+    height: 5,
+    backgroundColor: COLORS.border,
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginBottom: 15,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 12,
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
     textAlign: 'center',
+    color: COLORS.textPrimary,
+  },
+  closeButton: {
+    marginTop: 10,
+    padding: 15,
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
 

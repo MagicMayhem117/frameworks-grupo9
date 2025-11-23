@@ -176,7 +176,6 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Tus Actividades</Text>
 
       {act.length === 0 ? (
         console.log("actividades vacio"),
@@ -251,7 +250,7 @@ export default function HomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", padding: 20 },
-  header: { fontSize: 24, fontWeight: "700", color: "#111827", marginBottom: 20 },
+
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
   emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   addButton: {

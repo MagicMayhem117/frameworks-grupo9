@@ -26,8 +26,6 @@ const SettingsScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Ajustes</Text>
-
       <Text style={styles.sectionTitle}>Ajustes y Perfil</Text>
 
       {/* Perfil */}
