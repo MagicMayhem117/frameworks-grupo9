@@ -34,12 +34,9 @@ export default function RachaScreen({ navigation }) {
       if (email) {
         try {
           const userData = await getUserByEmail(email);
-          // Asumimos que en tu BD el campo se llama 'racha'.
-          // Si se llama diferente (ej: 'streak', 'dias'), cambiar aqui
           if (userData && userData.racha !== undefined) {
             setStreak(userData.racha);
           } else {
-            // Si no tiene racha, asumimos 0
             setStreak(0);
           }
         } catch (error) {
@@ -98,11 +95,11 @@ export default function RachaScreen({ navigation }) {
       </View>
 
       {/* Gradiente suave para unificar */}
-      <LinearGradient
+      {/*<LinearGradient
         colors={['transparent', 'rgba(139, 168, 142, 0.3)', '#8ba88e']}
         locations={[0, 0.4, 0.8]}
         style={styles.gradientOverlay}
-      />
+      />*/}
 
       {/* boton de regreso */}
       <View style={styles.headerSafeArea}>

@@ -122,6 +122,28 @@ export default function HomeScreen({ navigation }) {
     });
     let fecha = new Date();
     const mes = meses[fecha.getMonth()];
+
+    const racha_fecha = usuario.fecha ? usuario.fecha : "0 0";
+
+    console.log(racha_fecha);
+
+    if (racha_fecha != dateAct) {
+      console.log(racha_fecha);
+      try {
+        let racha = usuario.racha ? usuario.racha : 0;
+
+        racha += 1;
+
+        const usuarioRef = doc(db, "Usuarios", usuario.id);
+        await updateDoc(usuarioRef, {
+          racha: racha,
+          fecha: dateAct,
+        });
+      } catch (e) {
+        console.log(e);
+      }
+    }
+
     if (!cantidad) {
       cantidad = 1;
     }

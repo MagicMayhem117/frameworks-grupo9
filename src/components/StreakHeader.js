@@ -1,11 +1,34 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useStreak } from '../context/StreakContext';
+import { useUser } from "../context/UserContext";
+import { getUserByEmail } from "../db/userQueries";
 
 const StreakHeader = () => {
-  const { streak } = useStreak();
+  //const { streak } = useStreak();
+  const { email } = useUser();
   const navigation = useNavigation();
+  const [streak, setStreak] = useState(0);
+
+  useEffect(() => {
+      const fetchStreak = async () => {
+        if (email) {
+          try {
+            const userData = await getUserByEmail(email);
+            if (userData && userData.racha !== undefined) {
+              setStreak(userData.racha);
+            } else {
+              setStreak(0);
+            }
+          } catch (error) {
+            console.error("Error al obtener racha:", error);
+          }
+        }
+      };
+  
+      fetchStreak();
+    }, [email]);
 
   return (
     <TouchableOpacity
