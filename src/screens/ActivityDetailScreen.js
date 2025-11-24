@@ -6,10 +6,8 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  TextInput,
   Switch,
 } from "react-native";
-import { Dimensions } from 'react-native';
 import {
   getFirestore,
   doc,
@@ -21,19 +19,18 @@ import { LineChart, BarChart } from "react-native-gifted-charts";
 
 export default function ActivityDetailScreen({ route, navigation }) {
   const { activity } = route.params;
-  const [nombre, setNombre] = useState(activity.name);
   const [guardando, setGuardando] = useState(false);
   const [publico, setPublico] = useState(activity.publico);
   const [ultimoMes, setUltimoMes] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
-      const arregloGrafica = activity.ultimo_mes; 
-      
-      const transformedData = arregloGrafica.map(value => ({
+      const arregloGrafica = activity.ultimo_mes || [];
+
+      const transformedData = arregloGrafica.map((value) => ({
         value: value,
       }));
-      
+
       setUltimoMes(transformedData);
     };
 
@@ -43,7 +40,7 @@ export default function ActivityDetailScreen({ route, navigation }) {
   const handleSave = async () => {
     try {
       setGuardando(true);
-      console.log(activity.id);
+      // Solo actualizamos 'publico'
       await updateDoc(doc(db, "Actividades", activity.id), { publico: publico });
       Alert.alert("Éxito", "Actividad actualizada correctamente");
       navigation.goBack();
@@ -83,39 +80,38 @@ export default function ActivityDetailScreen({ route, navigation }) {
     <View style={styles.container}>
       <Text style={styles.title}>Editar Actividad</Text>
 
-      <TextInput
-        style={styles.input}
-        value={nombre}
-        onChangeText={setNombre}
-        placeholder="Nombre del hábito"
-      />
+      {/* nombre estilizado y no editable */}
+      <View style={styles.nameCard}>
+        <Text style={styles.label}>Nombre de la actividad</Text>
+        <Text style={styles.activityName}>{activity.name}</Text>
+      </View>
 
       <View style={styles.preferenceRow}>
         <Text style={styles.preferenceText}>Actividad Pública</Text>
-        <Switch
-        value={publico}
-        onValueChange={setPublico}
-        />
+        <Switch value={publico} onValueChange={setPublico} />
       </View>
 
-      {activity.trackingType == 'binary' ? (
-        <BarChart
-          data={ultimoMes}
-          spacing={1}
-          initialSpacing={0}
-          barWidth={9}
-          height={150}
-          noOfSections={1}
-        />
-      ) : (
-        <LineChart
-          data={ultimoMes}
-          spacing={10}
-          initialSpacing={0}
-        />
-      )}
-      
-      
+      {/* titulo para la grafica */}
+      <Text style={styles.chartTitle}>Progreso reciente</Text>
+
+      <View style={{ marginBottom: 20 }}>
+        {activity.trackingType == "binary" ? (
+          <BarChart
+            data={ultimoMes}
+            spacing={1}
+            initialSpacing={0}
+            barWidth={9}
+            height={150}
+            noOfSections={1}
+          />
+        ) : (
+          <LineChart
+            data={ultimoMes}
+            spacing={10}
+            initialSpacing={0}
+          />
+        )}
+      </View>
 
       <TouchableOpacity
         style={[styles.button, { backgroundColor: "#4f46e5" }]}
@@ -142,13 +138,37 @@ export default function ActivityDetailScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", padding: 20 },
   title: { fontSize: 22, fontWeight: "700", marginBottom: 20 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
+
+  // Estilos para la tarjeta del nombre
+  nameCard: {
+    backgroundColor: "#f3f4f6",
+    padding: 16,
     borderRadius: 10,
-    padding: 10,
     marginBottom: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: "#4f46e5",
   },
+  label: {
+    fontSize: 11,
+    textTransform: "uppercase",
+    color: "#6b7280",
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  activityName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1f2937",
+  },
+
+  // Estilo para el título de la grafica
+  chartTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 10,
+    color: "#374151",
+  },
+
   button: {
     paddingVertical: 14,
     borderRadius: 10,
@@ -157,13 +177,13 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
   preferenceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fd',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#f8f9fd",
     padding: 15,
     borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: 20, //margen para separar de la grafica
   },
   preferenceText: {
     fontSize: 16,
