@@ -10,6 +10,7 @@ import {
 import { useUser } from "../context/UserContext";
 import auth from "@react-native-firebase/auth";
 import { listenUserByEmail, listenActividades } from "../db/userQueries";
+
 import {
   getFirestore,
   collection,
@@ -18,7 +19,6 @@ import {
   orderBy,
   onSnapshot,
 } from "firebase/firestore";
-import { db } from "../firebase";
 
 const StatsScreen = ({ navigation }) => {
   const { email } = useUser();
@@ -28,52 +28,51 @@ const StatsScreen = ({ navigation }) => {
   const activitiesUnsubRef = useRef(null);
 
   useEffect(() => {
-      if (!email) return;
-      setLoading(true);
-      const unsubscribeUser = listenUserByEmail(email, async (userData) => {
-        setUsuario(userData);
-  
-        // limpia los listeners previos
-        if (activitiesUnsubRef.current) {
-          try {
-            activitiesUnsubRef.current();
-          } catch (e) {
-            console.log(e);
-          }
-          activitiesUnsubRef.current = null;
-        }
-  
-        const actividadIds = userData?.actividades || [];
-        console.log("fhdjgk");
-        if (actividadIds.length === 0) {
-          setHabits([]);
-          setLoading(false);
-          return;
-        }
-        console.log("hgfj");
-        // escucha cada hábito
-        activitiesUnsubRef.current = listenActividades(actividadIds, (updatedActivities) => {
-          setHabits(updatedActivities);
-          setLoading(false);
-        });
-      });
+    if (!email) return;
+    setLoading(true);
+    const unsubscribeUser = listenUserByEmail(email, async (userData) => {
+      setUsuario(userData);
 
-      return () => {
+      // limpia los listeners previos
+      if (activitiesUnsubRef.current) {
         try {
-          console.log("Try")
-          unsubscribeUser();
+          activitiesUnsubRef.current();
         } catch (e) {
           console.log(e);
         }
-        if (activitiesUnsubRef.current) {
-          try {
-            activitiesUnsubRef.current();
-          } catch (e) {
-            // ignore
-          }
+        activitiesUnsubRef.current = null;
+      }
+
+      const actividadIds = userData?.actividades || [];
+      
+      if (actividadIds.length === 0) {
+        setHabits([]);
+        setLoading(false);
+        return;
+      }
+      console.log("hgfj");
+      // escucha cada habito
+      activitiesUnsubRef.current = listenActividades(actividadIds, (updatedActivities) => {
+        setHabits(updatedActivities);
+        setLoading(false);
+      });
+    });
+
+    return () => {
+      try {
+        unsubscribeUser();
+      } catch (e) {
+        console.log(e);
+      }
+      if (activitiesUnsubRef.current) {
+        try {
+          activitiesUnsubRef.current();
+        } catch (e) {
+          // ignore
         }
-      };
-    }, [email]);
+      }
+    };
+  }, [email]);
 
   if (loading) {
     return (
@@ -91,12 +90,14 @@ const StatsScreen = ({ navigation }) => {
       {habits.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.noHabits}>Aún no has creado hábitos.</Text>
+          
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => navigation.navigate("CrateHabitScreen")}
+            onPress={() => navigation.navigate("Agregar")} 
           >
             <Text style={styles.addText}>＋ Crear nuevo hábito</Text>
           </TouchableOpacity>
+          
         </View>
       ) : (
         <>
@@ -125,7 +126,7 @@ const StatsScreen = ({ navigation }) => {
 
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => navigation.navigate("CreateHabit")}
+            onPress={() => navigation.navigate("Agregar")}
           >
             <Text style={styles.addText}>＋ Crear nuevo hábito</Text>
           </TouchableOpacity>
@@ -136,8 +137,17 @@ const StatsScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 20 },
-  title: { fontSize: 24, fontWeight: "700", marginBottom: 20, color: "#111827" },
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+    padding: 20
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 20,
+    color: "#111827"
+  },
   card: {
     flexDirection: "row",
     alignItems: "center",
@@ -147,10 +157,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 12,
   },
-  icon: { fontSize: 28, marginRight: 10 },
-  info: { flex: 1 },
-  name: { fontSize: 18, fontWeight: "600" },
-  details: { fontSize: 14, color: "#6b7280" },
+  icon: {
+    fontSize: 28,
+    marginRight: 10
+  },
+  info: {
+    flex: 1
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: "600"
+  },
+  details: {
+    fontSize: 14,
+    color: "#6b7280"
+  },
   addButton: {
     backgroundColor: "#4f46e5",
     paddingVertical: 14,
@@ -158,11 +179,28 @@ const styles = StyleSheet.create({
     marginTop: 20,
     alignItems: "center",
   },
-  addText: { color: "white", fontWeight: "700", fontSize: 16 },
-  noHabits: { textAlign: "center", color: "#6b7280", fontSize: 16, marginBottom: 10 },
-  emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: { marginTop: 10, fontSize: 16, color: "#4f46e5" },
+  addText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 16
+  },
+  noHabits: { textAlign: "center",
+    color: "#6b7280", fontSize: 16,
+    marginBottom: 10
+  },
+  emptyContainer: { flex: 1,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  centered: { flex: 1,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  loadingText: { marginTop: 10,
+    fontSize: 16,
+    color: "#4f46e5"
+  },
 });
 
 export default StatsScreen;
+
