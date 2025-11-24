@@ -67,7 +67,7 @@ const App = () => {
         <NavigationContainer>
           <Stack.Navigator>
             {user ? (
-              // ✅ Bloque cuando el usuario ha iniciado sesión
+              //  Bloque cuando el usuario ha iniciado sesión
               <>
                 <Stack.Screen
                   name="BottomTab"
@@ -115,7 +115,7 @@ const App = () => {
                 />
               </>
             ) : (
-              // ✅ Bloque cuando el usuario NO ha iniciado sesión
+              //  Bloque cuando el usuario NO ha iniciado sesión
               <>
                 <Stack.Screen
                   name="Login"

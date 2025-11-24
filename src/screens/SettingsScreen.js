@@ -80,7 +80,7 @@ const SettingsScreen = () => {
       <Text style={styles.sectionTitle}>Preferencias</Text>
 
       <View style={styles.preferenceRow}>
-        <Text style={styles.preferenceText}>Notificaciones Diarias</Text>
+        <Text style={styles.preferenceText}>Notificaciones</Text>
         <Switch
           value={dailyNotifications}
           onValueChange={toggleNotifications} // <--- CAMBIO: Usamos la nueva función toggleNotifications

@@ -32,7 +32,7 @@ const meses = {
   11: 31,
 }
 
-// Función para Google Sign-In
+// Funcion para Google Sign-In
 async function onGoogleButtonPress() {
   try {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
@@ -49,10 +49,11 @@ const LoginScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const { setStateEmail } = useUser();
-  //const [fecha, setFecha] = useState("0 0");
+  
+  // Nuevo estado para manejar el mensaje de error visual
+  const [errorMessage, setErrorMessage] = useState('');
 
   const fetchFecha = async () => {
-    
     const userData = await getUserByEmail(email);
     console.log(userData.fecha);
     let fecha = "0 0";
@@ -92,8 +93,10 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const handleLogin = async () => {
+    setErrorMessage(''); // Limpiar errores previos
+
     if (email.length === 0 || password.length === 0) {
-      Alert.alert('Error', 'Por favor, llena todos los campos.');
+      setErrorMessage('Por favor, llena todos los campos.');
       return;
     }
     try {
@@ -101,7 +104,8 @@ const LoginScreen = ({ navigation }) => {
       setStateEmail(email);
       await fetchFecha();
     } catch (error) {
-      Alert.alert('Error', 'Credenciales incorrectas. Por favor, inténtalo de nuevo.');
+      // Mostrar error en el layout en lugar de Alert
+      setErrorMessage('Credenciales incorrectas. Por favor, inténtalo de nuevo.');
       console.log(error);
     }
   };
@@ -125,7 +129,8 @@ const LoginScreen = ({ navigation }) => {
           placeholder="Enter your Email"
           placeholderTextColor="#888"
           value={email}
-          onChangeText={setEmail}
+          // Al escribir, actualizamos el valor y borramos el error
+          onChangeText={(text) => { setEmail(text); setErrorMessage(''); }}
           keyboardType="email-address"
           autoCapitalize="none"
         />
@@ -139,7 +144,8 @@ const LoginScreen = ({ navigation }) => {
           placeholder="Enter your Password"
           placeholderTextColor="#888"
           value={password}
-          onChangeText={setPassword}
+          // Al escribir, actualizamos el valor y borramos el error
+          onChangeText={(text) => { setPassword(text); setErrorMessage(''); }}
           secureTextEntry={!showPassword}
         />
         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
@@ -151,14 +157,22 @@ const LoginScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Botón de inicio de sesión */}
+      {/* Mensaje de error visual */}
+      {errorMessage ? (
+        <View style={styles.errorContainer}>
+            <Icon name="alert-circle-outline" size={20} color="#FF3B30" style={{marginRight: 5}} />
+            <Text style={styles.errorText}>{errorMessage}</Text>
+        </View>
+      ) : null}
+
+      {/* Boton de inicio de sesión */}
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Sign In</Text>
       </TouchableOpacity>
 
       <Text style={styles.orText}>O con</Text>
 
-      {/* Botón de Google */}
+      {/* Boton de Google */}
       <TouchableOpacity style={styles.googleButton} onPress={onGoogleButtonPress}>
         <Icon name="google" size={20} color="#FFF" />
         <Text style={styles.googleButtonText}>Google</Text>
@@ -185,8 +199,8 @@ const styles = StyleSheet.create({
   },
   logo: {
     marginBottom: 30,
-    width: 140,  // Definimos el ancho explícitamente
-    height: 140, // Definimos la altura explícitamente
+    width: 140,  
+    height: 140,
     resizeMode: 'contain', // Mantiene la proporción de la imagen
   },
   title: {
@@ -211,6 +225,24 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 50,
     color: '#FFF',
+  },
+  // Estilos agregados para el mensaje de error
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 59, 48, 0.1)', // Fondo rojo muy suave
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 15,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#FF3B30',
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 14,
+    flex: 1,
+    fontWeight: '500',
   },
   button: {
     backgroundColor: '#0D6EFD',
