@@ -13,6 +13,24 @@ import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useUser } from "../context/UserContext";
+import { getUserByEmail } from "../db/userQueries";
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from "../firebase";
+
+const meses = {
+  0: 31,
+  1: 28,
+  2: 31,
+  3: 30,
+  4: 31,
+  5: 30,
+  6: 31,
+  7: 31,
+  8: 30,
+  9: 31,
+  10: 30,
+  11: 31,
+}
 
 // Función para Google Sign-In
 async function onGoogleButtonPress() {
@@ -31,6 +49,47 @@ const LoginScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const { setStateEmail } = useUser();
+  //const [fecha, setFecha] = useState("0 0");
+
+  const fetchFecha = async () => {
+    
+    const userData = await getUserByEmail(email);
+    console.log(userData.fecha);
+    let fecha = "0 0";
+    if (userData.fecha !== undefined) {
+      fecha = userData.fecha;
+      console.log("Fecha:", fecha);
+    }
+
+    let date = new Date();
+
+    console.log(fecha);
+
+    const fechaRacha = fecha.split(" ");
+
+    let perdido = false;
+
+    if (date.getMonth() == parseInt(fechaRacha[1])) {
+      if ((date.getDate() - parseInt(fechaRacha[0])) > 1) {
+        console.log("Usuario ha perdido su racha.")
+        perdido = true;
+      }
+    } else {
+      if (meses[parseInt(fechaRacha[1])] > parseInt(fechaRacha[0])) {
+        console.log("Usuario ha perdido su racha.")
+        perdido = true;
+      } else if (date.getDate() > 1) {
+        console.log("Usuario ha perdido su racha.")
+        perdido = true;
+      }
+    }
+    if (perdido) {
+      const usuarioRef = doc(db, "Usuarios", userData.id);
+      await updateDoc(usuarioRef, {
+        racha: 0
+      });
+    }
+  };
 
   const handleLogin = async () => {
     if (email.length === 0 || password.length === 0) {
@@ -40,8 +99,10 @@ const LoginScreen = ({ navigation }) => {
     try {
       await auth().signInWithEmailAndPassword(email, password);
       setStateEmail(email);
+      await fetchFecha();
     } catch (error) {
       Alert.alert('Error', 'Credenciales incorrectas. Por favor, inténtalo de nuevo.');
+      console.log(error);
     }
   };
 

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  Alert,
 } from "react-native";
 import auth from "@react-native-firebase/auth";
 import { useUser } from "../context/UserContext";
@@ -27,6 +28,20 @@ const meses = {
   9: "octubre",
   10: "noviembre",
   11: "diciembre",
+}
+const diasMeses = {
+  0: 31,
+  1: 28,
+  2: 31,
+  3: 30,
+  4: 31,
+  5: 30,
+  6: 31,
+  7: 31,
+  8: 30,
+  9: 31,
+  10: 30,
+  11: 31,
 }
 
 
@@ -110,18 +125,61 @@ export default function HomeScreen({ navigation }) {
 
   const completeHabit = async (cantidad) => {
     // Aquí va la lógica para marcar el hábito como completado
-    if (selectedHabit.fecha == dateAct) {
-      console.log("Este hábito ya se ha completado");
+    /*if (selectedHabit.fecha == dateAct) {
+      Alert.alert("Completo", "Este hábito ya se ha completado");
       closePopUp();
       return;
-    }
+    }*/
     console.log('Hábito completado con ID:', selectedHabit.id);
+
+    const actFecha = selectedHabit.fecha.split(" ");
+    console.log("Act fecha: ", actFecha);
+
     const actividadRef = doc(db, 'Actividades', selectedHabit.id);
     await updateDoc(actividadRef, {
       fecha: dateAct
     });
     let fecha = new Date();
     const mes = meses[fecha.getMonth()];
+
+    let dif_dias = 0;
+
+    console.log("Mes: ", date.getMonth());
+    console.log("Mes act: ", parseInt(actFecha[1]))
+
+    if (date.getMonth() == parseInt(actFecha[1])) {
+      console.log("Mes a: ", date.getMonth());
+      if ((date.getDate() - parseInt(actFecha[0])) > 1) {
+        console.log("Diferencia de dias mismo mes: ", (date.getDate() - parseInt(actFecha[0]) - 1));
+        dif_dias = date.getDate() - parseInt(actFecha[0]) - 1;
+      }
+    } else {
+      dif_dias += diasMeses[parseInt(actFecha[1])] - parseInt(actFecha[0]);
+      dif_dias += date.getDate() - 1;
+    }
+    console.log("Diferencia de días: ", dif_dias);
+
+    const racha_fecha = usuario.fecha ? usuario.fecha : "0 0";
+
+    console.log(racha_fecha);
+
+    if (racha_fecha != dateAct) {
+      console.log(racha_fecha);
+      try {
+        let racha = usuario.racha ? usuario.racha : 0;
+
+        racha += 1;
+
+        const usuarioRef = doc(db, "Usuarios", usuario.id);
+        await updateDoc(usuarioRef, {
+          racha: racha,
+          fecha: dateAct,
+        });
+      } catch (e) {
+        console.log(e);
+      }
+    }
+
     if (!cantidad) {
       cantidad = 1;
     }
@@ -143,6 +201,11 @@ export default function HomeScreen({ navigation }) {
         } else {
           datos_mes = selectedHabit.ultimo_mes;
         }
+        for (let i = 0; i < dif_dias; i++) {
+          datos_mes.shift();
+          datos_mes.push(0);
+          console.log("Datos del mes: ", datos_mes);
+        }
         datos_mes.shift();
         datos_mes.push(1);
         console.log(datos_mes);
@@ -159,6 +222,11 @@ export default function HomeScreen({ navigation }) {
           datos_mes = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
         } else {
           datos_mes = selectedHabit.ultimo_mes;
+        }
+        for (let i = 0; i < dif_dias; i++) {
+          datos_mes.shift();
+          datos_mes.push(0);
+          console.log("Datos del mes: ", datos_mes);
         }
         datos_mes.shift();
         datos_mes.push(parseInt(cantidad));

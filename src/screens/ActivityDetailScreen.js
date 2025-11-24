@@ -1,4 +1,4 @@
-import { React, useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   TextInput,
   Switch,
 } from "react-native";
+import { Dimensions } from 'react-native';
 import {
   getFirestore,
   doc,
@@ -16,12 +17,28 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import { LineChart, BarChart } from "react-native-gifted-charts";
 
 export default function ActivityDetailScreen({ route, navigation }) {
   const { activity } = route.params;
   const [nombre, setNombre] = useState(activity.name);
   const [guardando, setGuardando] = useState(false);
   const [publico, setPublico] = useState(activity.publico);
+  const [ultimoMes, setUltimoMes] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const arregloGrafica = activity.ultimo_mes; 
+      
+      const transformedData = arregloGrafica.map(value => ({
+        value: value,
+      }));
+      
+      setUltimoMes(transformedData);
+    };
+
+    fetchData();
+  }, []);
 
   const handleSave = async () => {
     try {
@@ -80,6 +97,25 @@ export default function ActivityDetailScreen({ route, navigation }) {
         onValueChange={setPublico}
         />
       </View>
+
+      {activity.trackingType == 'binary' ? (
+        <BarChart
+          data={ultimoMes}
+          spacing={1}
+          initialSpacing={0}
+          barWidth={9}
+          height={150}
+          noOfSections={1}
+        />
+      ) : (
+        <LineChart
+          data={ultimoMes}
+          spacing={10}
+          initialSpacing={0}
+        />
+      )}
+      
+      
 
       <TouchableOpacity
         style={[styles.button, { backgroundColor: "#4f46e5" }]}
