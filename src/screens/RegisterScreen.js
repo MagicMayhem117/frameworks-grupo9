@@ -7,7 +7,7 @@ import {
   StyleSheet,
   Alert,
   StatusBar,
-  Image, // Importamos Image
+  Image,
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -15,13 +15,11 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { db } from "../firebase";
 import { doc, setDoc, collection, addDoc } from "firebase/firestore";
 
-// La misma función de Google funciona para registrarse o iniciar sesión
 async function onGoogleButtonPress() {
   try {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
     const { idToken } = await GoogleSignin.signIn();
     const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-    // La primera vez, esto crea un usuario. Las siguientes, inicia sesión.
     return auth().signInWithCredential(googleCredential);
   } catch (error) {
     console.log(error);
@@ -35,25 +33,63 @@ const RegisterScreen = ({ navigation }) => {
   const [verifyPassword, setVerifyPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showVerifyPassword, setShowVerifyPassword] = useState(false);
+  
+  // Nuevo estado para manejar el mensaje de error en pantalla
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // Using shared db from src/firebase
+  // validacion
+
+  const validateEmailFormat = (email) => {
+    // Expresión regular estandar para emails
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
+
+  const validatePasswordStrength = (password) => {
+    // minimo 8 caracteres, 1 mayuscula, 1 minuscula, 1 numero
+    const re = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
+    return re.test(password);
+  };
 
   const handleRegister = async () => {
+    setErrorMessage(''); // Limpiar errores previos al intentar registrar
+
+    //validar campos vacios
     if (!nombre || !email || !password || !verifyPassword) {
-      Alert.alert('Error', 'Por favor, llena todos los campos.');
+      setErrorMessage('Por favor, llena todos los campos.');
       return;
     }
+
+    // validar formato de correo
+    if (!validateEmailFormat(email)) {
+      setErrorMessage('El formato del correo electrónico es inválido.\nEjemplo: usuario@mail.com');
+      return;
+    }
+
+    // validar seguridad de la password
+    if (!validatePasswordStrength(password)) {
+      setErrorMessage(
+        'La contraseña es insegura.\nDebe tener al menos 8 caracteres, incluir una mayúscula, una minúscula y un número.'
+      );
+      return;
+    }
+
+    //validar coincidencia de passwords
     if (password !== verifyPassword) {
-      Alert.alert('Error', 'Las contraseñas no coinciden.');
+      setErrorMessage('Las contraseñas no coinciden.');
       return;
     }
+
     try {
       const userCredential = await auth().createUserWithEmailAndPassword(email, password);
-      // Actualiza el perfil del usuario con su nombre
+      
       await userCredential.user.updateProfile({
         displayName: nombre,
       });
+      
+      // Mantenemos el Alert de exito ya que es una confirmación final antes de cambiar de flujo
       Alert.alert('¡Éxito!', 'Usuario registrado correctamente.');
+      
       await addDoc(collection(db, "Usuarios"), {
         nombre: nombre,
         correo: email,
@@ -62,11 +98,13 @@ const RegisterScreen = ({ navigation }) => {
       });
     } catch (error) {
       if (error.code === 'auth/email-already-in-use') {
-        Alert.alert('Error', 'Ese correo electrónico ya está en uso.');
+        setErrorMessage('Ese correo electrónico ya está en uso.');
       } else if (error.code === 'auth/invalid-email') {
-        Alert.alert('Error', 'El formato del correo electrónico es inválido.');
+        setErrorMessage('El formato del correo electrónico es inválido.');
+      } else if (error.code === 'auth/weak-password') {
+        setErrorMessage('La contraseña es demasiado débil.');
       } else {
-        Alert.alert('Error', error.message);
+        setErrorMessage(error.message);
       }
     }
   };
@@ -75,7 +113,6 @@ const RegisterScreen = ({ navigation }) => {
     <View style={styles.container}>
       <StatusBar backgroundColor="#121212" barStyle="light-content" />
 
-      {/* Reemplazo del SVG por Image */}
       <Image
         source={require('../assets/Logo_0.png')}
         style={styles.logo}
@@ -89,7 +126,7 @@ const RegisterScreen = ({ navigation }) => {
           placeholder="Nombre"
           placeholderTextColor="#888"
           value={nombre}
-          onChangeText={setNombre}
+          onChangeText={(text) => { setNombre(text); setErrorMessage(''); }}
         />
       </View>
       <View style={styles.inputContainer}>
@@ -98,7 +135,7 @@ const RegisterScreen = ({ navigation }) => {
           placeholder="Correo"
           placeholderTextColor="#888"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(text) => { setEmail(text); setErrorMessage(''); }}
           keyboardType="email-address"
           autoCapitalize="none"
         />
@@ -109,7 +146,7 @@ const RegisterScreen = ({ navigation }) => {
           placeholder="Contraseña"
           placeholderTextColor="#888"
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(text) => { setPassword(text); setErrorMessage(''); }}
           secureTextEntry={!showPassword}
         />
         <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
@@ -127,7 +164,7 @@ const RegisterScreen = ({ navigation }) => {
           placeholder="Verificar Contraseña"
           placeholderTextColor="#888"
           value={verifyPassword}
-          onChangeText={setVerifyPassword}
+          onChangeText={(text) => { setVerifyPassword(text); setErrorMessage(''); }}
           secureTextEntry={!showVerifyPassword}
         />
         <TouchableOpacity onPress={() => setShowVerifyPassword(!showVerifyPassword)} style={styles.eyeButton}>
@@ -138,6 +175,14 @@ const RegisterScreen = ({ navigation }) => {
           />
         </TouchableOpacity>
       </View>
+
+      {/* Aqui se muestra el mensaje de error si existe */}
+      {errorMessage ? (
+        <View style={styles.errorContainer}>
+            <Icon name="alert-circle-outline" size={20} color="#FF3B30" style={{marginRight: 5}} />
+            <Text style={styles.errorText}>{errorMessage}</Text>
+        </View>
+      ) : null}
 
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Crear Cuenta</Text>
@@ -169,8 +214,8 @@ const styles = StyleSheet.create({
     },
     logo: {
         marginBottom: 20,
-        width: 140,  // Ancho explícito para la imagen PNG
-        height: 140, // Alto explícito para la imagen PNG
+        width: 140, 
+        height: 140,
         resizeMode: 'contain',
     },
     title: {
@@ -196,6 +241,24 @@ const styles = StyleSheet.create({
     eyeButton: {
         paddingHorizontal: 5,
         paddingVertical: 10,
+    },
+    // Estilos para el mensaje de error
+    errorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 59, 48, 0.1)', // Fondo rojo muy suave
+        padding: 10,
+        borderRadius: 8,
+        marginBottom: 15,
+        width: '100%',
+        borderWidth: 1,
+        borderColor: '#FF3B30',
+    },
+    errorText: {
+        color: '#FF3B30', // Rojo brillante
+        fontSize: 14,
+        flex: 1, // Para que el texto ocupe el espacio restante si es largo
+        fontWeight: '500',
     },
     button: {
         backgroundColor: '#0D6EFD',
