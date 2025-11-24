@@ -6,6 +6,10 @@ import { useUser } from "../context/UserContext";
 import { getUserByEmail } from "../db/userQueries";
 import { findProfile } from "../components/FindProfileImg.js"
 
+// <--- NUEVO: Imports necesarios para notificaciones y guardado
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { NotificationManager } from '../services/NotificationManager';
+
 const SettingsScreen = () => {
   const navigation = useNavigation();
   const [dailyNotifications, setDailyNotifications] = useState(true);
@@ -13,7 +17,7 @@ const SettingsScreen = () => {
 
   const { email } = useUser();
   const [usuario, setUsuario] = useState(null);
-    
+
   useEffect(() => {
     async function fetchUser() {
       if (email) {
@@ -23,6 +27,32 @@ const SettingsScreen = () => {
     }
     fetchUser();
   }, [email]);
+
+  // <--- NUEVO: Cargar la preferencia guardada al abrir la pantalla
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const savedNotif = await AsyncStorage.getItem('dailyNotifications');
+        if (savedNotif !== null) {
+          setDailyNotifications(JSON.parse(savedNotif));
+        }
+      } catch (e) {
+        console.error("Error loading preferences", e);
+      }
+    };
+    loadPreferences();
+  }, []);
+
+  // <--- NUEVO: Función para manejar el interruptor (Guardar y Programar)
+  const toggleNotifications = async (value) => {
+    setDailyNotifications(value); // Actualiza el switch visualmente
+    try {
+      await AsyncStorage.setItem('dailyNotifications', JSON.stringify(value)); // Guarda en memoria
+      await NotificationManager.scheduleDailyNotification(value); // Activa/Desactiva la alarma real
+    } catch (e) {
+      console.error("Error saving notification preference", e);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -53,10 +83,9 @@ const SettingsScreen = () => {
         <Text style={styles.preferenceText}>Notificaciones Diarias</Text>
         <Switch
           value={dailyNotifications}
-          onValueChange={setDailyNotifications}
+          onValueChange={toggleNotifications} // <--- CAMBIO: Usamos la nueva función toggleNotifications
         />
       </View>
-
       <View style={styles.preferenceRow}>
         <Text style={styles.preferenceText}>Modo Oscuro</Text>
         <Switch value={darkMode} onValueChange={setDarkMode} />

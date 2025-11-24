@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { BottomTab } from './src/navigation/BottomTab';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import notifee, { EventType } from '@notifee/react-native';
 
 import { UserProvider } from "./src/context/UserContext";
 
@@ -41,7 +42,24 @@ const App = () => {
     return subscriber; // Se desuscribe al desmontar
   }, []);
 
-  if (initializing) return null; // puedes poner un componente de carga si quieres
+  // <--- NUEVO: Listener para notificaciones cuando la app está abierta
+  useEffect(() => {
+    return notifee.onForegroundEvent(({ type, detail }) => {
+      switch (type) {
+        case EventType.DISMISSED:
+          console.log('El usuario descartó la notificación');
+          break;
+        case EventType.PRESS:
+          console.log('El usuario tocó la notificación', detail.notification);
+          // Aquí podrías navegar, ej: navigation.navigate('Racha');
+          // Nota: Para navegar aquí necesitarías una referencia de navegación global (ref),
+          // pero por ahora con el console.log basta para probar.
+          break;
+      }
+    });
+  }, []);
+
+  if (initializing) return null;
 
   return (
     <UserProvider>
@@ -90,7 +108,6 @@ const App = () => {
                   }}
                 />
 
-              {/* Pantalla EditProfileScreen del primer código, ahora dentro de la lógica de usuario */}
                 <Stack.Screen
                   name="EditProfileScreen"
                   component={EditProfileScreen}
