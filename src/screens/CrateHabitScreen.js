@@ -434,7 +434,7 @@ const FrequencyModal = ({ visible, onClose, onSelect, currentDays }) => {
 // ----------------------------------------------------------------------
 // PANTALLA PRINCIPAL
 // ----------------------------------------------------------------------
-export default function CreateHabitScreen() {
+export default function CreateHabitScreen({ navigation }) {
   const [habitName, setHabitName] = useState("");
   const [isQuantitative, setIsQuantitative] = useState(true);
   const [dailyGoal, setDailyGoal] = useState("1");
