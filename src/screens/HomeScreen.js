@@ -235,7 +235,7 @@ export default function HomeScreen({ navigation }) {
             const todayStr = new Date().getDate() + " " + new Date().getMonth();
             const reg = (todayStr == item.fecha) ? '#4df358ff' :item.isGroupActivity && item.status === "pending"  ? '#facc15' : '#ef4444';//amarillo para peniente
             const title = item.nombre || item.name || 'Actividad';
-            const ultimoMes = transformArreglo(item.ultimo_mes);
+            const ultimoMes = transformArreglo(item.ultimo_mes || []);
             return (
               <TouchableOpacity
                 style={[styles.activityBox, { backgroundColor: bg }]}

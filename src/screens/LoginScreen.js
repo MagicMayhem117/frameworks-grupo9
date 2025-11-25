@@ -16,6 +16,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getUserByEmail } from "../db/userQueries";
 import { doc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { db } from "../firebase";
+import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 
 const meses = {
   0: 31, 1: 28, 2: 31, 3: 30, 4: 31, 5: 30,
@@ -34,6 +35,29 @@ const LoginScreen = ({ navigation }) => {
       webClientId: '919090861349-0fd8gtg71kbhvkb44q8asps91u7nchph.apps.googleusercontent.com',
     });
   }, []);
+  const recuperaContrasena = (emailRec) => {
+    const auth = getAuth();
+    sendPasswordResetEmail(auth, emailRec)
+      .then(() => {
+        console.log("Correo enviado!")
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.log(errorCode, errorMessage);
+      });
+  }
+
+  const fetchFecha = async () => {
+    const userData = await getUserByEmail(email);
+    console.log(userData.fecha);
+    let fecha = "0 0";
+    if (userData.fecha !== undefined) {
+      fecha = userData.fecha;
+      console.log("Fecha:", fecha);
+    }
+
+    let date = new Date();
 
   const checkRacha = async (userEmail) => {
     try {
@@ -175,6 +199,16 @@ const LoginScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
+
+      {/* Forgot password link */}
+      <TouchableOpacity
+        style={styles.forgotLinkContainer}
+        onPress={() => recuperaContrasena(email)}
+      >
+        <Text style={styles.forgotLinkText}>¿Olvidaste tu contraseña?</Text>
+      </TouchableOpacity>
+
+      {/* Mensaje de error visual */}
       {errorMessage ? (
         <View style={styles.errorContainer}>
             <Icon name="alert-circle-outline" size={20} color="#FF3B30" style={{marginRight: 5}} />
@@ -295,6 +329,16 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#0D6EFD',
     fontWeight: 'bold',
+  },
+  forgotLinkContainer: {
+    alignSelf: 'flex-end',
+    marginBottom: 10,
+  },
+  forgotLinkText: {
+    color: '#0D6EFD',
+    fontWeight: '500',
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
 });
 
