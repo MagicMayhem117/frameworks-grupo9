@@ -81,46 +81,34 @@ export async function getActividadesPublicas(ids) {
 }
 
 export function listenActividades(ids, onChange) {
-  if (!ids || !Array.isArray(ids) || ids.length === 0) {
-    if (typeof onChange === 'function') onChange([]);
+  if (!Array.isArray(ids) || ids.length === 0) {
+    onChange([]);
     return () => {};
   }
-  const unsubscribes = [];
-  const activitiesMap = new Map();
 
-  ids.forEach((id) => {
-    try {
-      const ref = doc(db, 'Actividades', id);
-      const unsub = onSnapshot(
-        ref,
-        (snap) => {
-          if (snap.exists()) {
-            activitiesMap.set(snap.id, { id: snap.id, ...snap.data() });
-          } else {
-            activitiesMap.delete(id);
-          }
-          if (typeof onChange === 'function') onChange(Array.from(activitiesMap.values()));
-        },
-        (err) => {
-          console.error('listenActividades error for', id, err);
-        }
-      );
-      unsubscribes.push(unsub);
-    } catch (err) {
-      console.error('listenActividades setup failed for', id, err);
-    }
+  const unsubscribes = [];
+  const map = new Map();
+
+  ids.forEach(id => {
+    const ref = doc(db, "Actividades", id);
+
+    const unsub = onSnapshot(ref, snap => {
+      if (snap.exists()) {
+        map.set(id, { id, ...snap.data() });
+      } else {
+        map.delete(id);
+      }
+
+      onChange(Array.from(map.values()));
+    });
+
+    unsubscribes.push(unsub);
   });
 
-  return () => {
-    unsubscribes.forEach((u) => {
-      try {
-        u();
-      } catch (e) {
-        // ignore
-      }
-    });
-  };
+  return () => unsubscribes.forEach(u => u());
 }
+
+
 
 export async function getAmigos(ids) {
   if (!ids) return [];
