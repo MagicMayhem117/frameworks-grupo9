@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,22 +9,12 @@ import {
   StatusBar,
   Image,
 } from 'react-native';
-import auth from '@react-native-firebase/auth';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+// 1. Imports actualizados para evitar warnings
+import auth, { GoogleAuthProvider } from '@react-native-firebase/auth';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { db } from "../firebase";
-import { doc, setDoc, collection, addDoc } from "firebase/firestore";
-
-async function onGoogleButtonPress() {
-  try {
-    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-    const { idToken } = await GoogleSignin.signIn();
-    const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-    return auth().signInWithCredential(googleCredential);
-  } catch (error) {
-    console.log(error);
-  }
-}
+import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
 
 const RegisterScreen = ({ navigation }) => {
   const [nombre, setNombre] = useState('');
@@ -33,48 +23,113 @@ const RegisterScreen = ({ navigation }) => {
   const [verifyPassword, setVerifyPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showVerifyPassword, setShowVerifyPassword] = useState(false);
-  
-  // Nuevo estado para manejar el mensaje de error en pantalla
   const [errorMessage, setErrorMessage] = useState('');
 
-  // validacion
+  // 1. Configuración inicial de Google (Igual que en Login)
+  useEffect(() => {
+    GoogleSignin.configure({
+      // ¡PEGAR TU WEB CLIENT ID AQUÍ!
+      webClientId: '919090861349-0fd8gtg71kbhvkb44q8asps91u7nchph.apps.googleusercontent.com',
+    });
+  }, []);
 
+  // validaciones
   const validateEmailFormat = (email) => {
-    // Expresión regular estandar para emails
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
   };
 
   const validatePasswordStrength = (password) => {
-    // minimo 8 caracteres, 1 mayuscula, 1 minuscula, 1 numero
     const re = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/;
     return re.test(password);
   };
 
-  const handleRegister = async () => {
-    setErrorMessage(''); // Limpiar errores previos al intentar registrar
+  // --- LÓGICA GOOGLE (NUEVA) ---
+  const handleGoogleRegister = async () => {
+      setErrorMessage('');
+      try {
+        // 1. Verificar servicios de Google
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
-    //validar campos vacios
+        // 2. Obtener tokens del usuario
+        const userInfo = await GoogleSignin.signIn();
+        const idToken = userInfo.idToken || userInfo.data?.idToken;
+
+        if (!idToken) throw new Error('No se pudo obtener el token de Google');
+
+        // 3. Crear credencial para Firebase
+        const googleCredential = GoogleAuthProvider.credential(idToken);
+
+        // 4. Autenticar en Firebase (Aquí ocurre la magia)
+        const userCredential = await auth().signInWithCredential(googleCredential);
+
+        // 5. VALIDACIÓN ESTRICTA: ¿Es un usuario nuevo?
+        if (!userCredential.additionalUserInfo.isNewUser) {
+          // --- CASO: EL USUARIO YA EXISTE ---
+
+          // Lo desconectamos inmediatamente para que no entre a la app
+          await auth().signOut();
+
+          // Le avisamos
+          Alert.alert(
+            'Cuenta ya registrada',
+            'Ya existe una cuenta vinculada a este correo de Google. Por favor, inicia sesión.',
+            [
+              {
+                text: 'Ir al Login',
+                onPress: () => navigation.navigate('Login')
+              }
+            ]
+          );
+          return; // Detenemos la función aquí
+        }
+
+        // --- CASO: ES UN USUARIO NUEVO ---
+        // Si llegamos aquí, es seguro guardar en la base de datos
+        const googleUser = userCredential.user;
+
+        await addDoc(collection(db, "Usuarios"), {
+          nombre: googleUser.displayName || "Usuario Google",
+          correo: googleUser.email,
+          racha: 0,
+          img_path: 'perfil1',
+          fecha: "0 0"
+        });
+
+        Alert.alert('¡Bienvenido!', 'Tu cuenta ha sido creada exitosamente.');
+
+      } catch (error) {
+        console.log("Error Google Register:", error);
+
+        // Si cerramos la sesión manualmente arriba, a veces puede lanzar un error de cancelación, lo ignoramos
+        if (error.code === 'auth/user-cancelled') return;
+
+        if (error && error.code === statusCodes.SIGN_IN_CANCELLED) {
+          setErrorMessage('Registro cancelado.');
+        } else if (error && error.code === statusCodes.IN_PROGRESS) {
+          setErrorMessage('Ya se está procesando un registro.');
+        } else {
+          setErrorMessage('Hubo un problema al registrarse con Google.');
+        }
+      }
+    };
+
+  // --- LÓGICA EMAIL/PASS (ORIGINAL) ---
+  const handleRegister = async () => {
+    setErrorMessage('');
+
     if (!nombre || !email || !password || !verifyPassword) {
       setErrorMessage('Por favor, llena todos los campos.');
       return;
     }
-
-    // validar formato de correo
     if (!validateEmailFormat(email)) {
       setErrorMessage('El formato del correo electrónico es inválido.\nEjemplo: usuario@mail.com');
       return;
     }
-
-    // validar seguridad de la password
     if (!validatePasswordStrength(password)) {
-      setErrorMessage(
-        'La contraseña es insegura.\nDebe tener al menos 8 caracteres, incluir una mayúscula, una minúscula y un número.'
-      );
+      setErrorMessage('La contraseña es insegura.\nDebe tener al menos 8 caracteres, mayúscula, minúscula y número.');
       return;
     }
-
-    //validar coincidencia de passwords
     if (password !== verifyPassword) {
       setErrorMessage('Las contraseñas no coinciden.');
       return;
@@ -82,20 +137,22 @@ const RegisterScreen = ({ navigation }) => {
 
     try {
       const userCredential = await auth().createUserWithEmailAndPassword(email, password);
-      
+
       await userCredential.user.updateProfile({
         displayName: nombre,
       });
-      
-      // Mantenemos el Alert de exito ya que es una confirmación final antes de cambiar de flujo
+
       Alert.alert('¡Éxito!', 'Usuario registrado correctamente.');
-      
+
       await addDoc(collection(db, "Usuarios"), {
         nombre: nombre,
         correo: email,
         racha: 0,
-        img_path: 'perfil1'
+        img_path: 'perfil1',
+        fecha: "0 0"
       });
+
+      // navigation.navigate('Login'); // Opcional
     } catch (error) {
       if (error.code === 'auth/email-already-in-use') {
         setErrorMessage('Ese correo electrónico ya está en uso.');
@@ -111,7 +168,7 @@ const RegisterScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#121212" barStyle="light-content" />
+      <StatusBar backgroundColor="#000000" barStyle="light-content" />
 
       <Image
         source={require('../assets/Logo_0.png')}
@@ -176,7 +233,6 @@ const RegisterScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Aqui se muestra el mensaje de error si existe */}
       {errorMessage ? (
         <View style={styles.errorContainer}>
             <Icon name="alert-circle-outline" size={20} color="#FF3B30" style={{marginRight: 5}} />
@@ -190,7 +246,8 @@ const RegisterScreen = ({ navigation }) => {
 
       <Text style={styles.orText}>O con</Text>
 
-      <TouchableOpacity style={styles.googleButton} onPress={onGoogleButtonPress}>
+      {/* Botón de Google Actualizado */}
+      <TouchableOpacity style={styles.googleButton} onPress={handleGoogleRegister}>
         <Icon name="google" size={20} color="#FFF" />
         <Text style={styles.googleButtonText}>Google</Text>
       </TouchableOpacity>
@@ -214,7 +271,7 @@ const styles = StyleSheet.create({
     },
     logo: {
         marginBottom: 20,
-        width: 140, 
+        width: 140,
         height: 140,
         resizeMode: 'contain',
     },
@@ -242,11 +299,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 5,
         paddingVertical: 10,
     },
-    // Estilos para el mensaje de error
     errorContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 59, 48, 0.1)', // Fondo rojo muy suave
+        backgroundColor: 'rgba(255, 59, 48, 0.1)',
         padding: 10,
         borderRadius: 8,
         marginBottom: 15,
@@ -255,9 +311,9 @@ const styles = StyleSheet.create({
         borderColor: '#FF3B30',
     },
     errorText: {
-        color: '#FF3B30', // Rojo brillante
+        color: '#FF3B30',
         fontSize: 14,
-        flex: 1, // Para que el texto ocupe el espacio restante si es largo
+        flex: 1,
         fontWeight: '500',
     },
     button: {
