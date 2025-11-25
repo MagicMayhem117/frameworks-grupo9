@@ -12,7 +12,7 @@ import auth from "@react-native-firebase/auth";
 import { useUser } from "../context/UserContext";
 import HabitPopUp from '../components/HabitPopUp';
 import { listenUserByEmail, listenActividades } from "../db/userQueries";
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from "../firebase";
 import { LineChart, BarChart } from "react-native-gifted-charts";
 
@@ -124,132 +124,84 @@ export default function HomeScreen({ navigation }) {
     setPopUpVisible(false);
   };
 
-  const completeHabit = async (cantidad) => {
     // Aquí va la lógica para marcar el hábito como completado
     /*if (selectedHabit.fecha == dateAct) {
       Alert.alert("Completo", "Este hábito ya se ha completado");
       closePopUp();
       return;
     }*/
-    console.log('Hábito completado con ID:', selectedHabit.id);
+    const completeHabit = async (cantidad = 1) => {
+      if (!selectedHabit) return;
 
-    const actFecha = selectedHabit.fecha.split(" ");
-    console.log("Act fecha: ", actFecha);
-
-    const actividadRef = doc(db, 'Actividades', selectedHabit.id);
-    await updateDoc(actividadRef, {
-      fecha: dateAct
-    });
-    let fecha = new Date();
-    const mes = meses[fecha.getMonth()];
-
-    let dif_dias = 0;
-
-    console.log("Mes: ", date.getMonth());
-    console.log("Mes act: ", parseInt(actFecha[1]))
-
-    if (date.getMonth() == parseInt(actFecha[1])) {
-      console.log("Mes a: ", date.getMonth());
-      if ((date.getDate() - parseInt(actFecha[0])) > 1) {
-        console.log("Diferencia de dias mismo mes: ", (date.getDate() - parseInt(actFecha[0]) - 1));
-        dif_dias = date.getDate() - parseInt(actFecha[0]) - 1;
-      }
-    } else {
-      dif_dias += diasMeses[parseInt(actFecha[1])] - parseInt(actFecha[0]);
-      dif_dias += date.getDate() - 1;
-    }
-    console.log("Diferencia de días: ", dif_dias);
-
-    const racha_fecha = usuario.fecha ? usuario.fecha : "0 0";
-
-    console.log(racha_fecha);
-
-    if (racha_fecha != dateAct) {
-      console.log(racha_fecha);
       try {
-        let racha = usuario.racha ? usuario.racha : 0;
+        const actividadRef = doc(db, "Actividades", selectedHabit.id);
+        const actividadSnap = await getDoc(actividadRef);
+        if (!actividadSnap.exists()) return;
 
-        racha += 1;
+        const actividadData = actividadSnap.data();
+        const fechaHoy = date.getDate() + " " + date.getMonth();
+        const mes = meses[date.getMonth()];
 
-        const usuarioRef = doc(db, "Usuarios", usuario.id);
-        await updateDoc(usuarioRef, {
-          racha: racha,
-          fecha: dateAct,
-        });
-      } catch (e) {
-        console.log(e);
-      }
-    }
+        // Actualizar fecha de la actividad
+        await updateDoc(actividadRef, { fecha: fechaHoy });
 
-    if (!cantidad) {
-      cantidad = 1;
-    }
-    if (!selectedHabit[mes]) {
-      await updateDoc(actividadRef, {
-        [mes]: 1
-      });
-    } else {
-      await updateDoc(actividadRef, {
-        [mes]: selectedHabit[mes] + 1,
-      });
-    }
-    console.log(mes);
-    if (selectedHabit.trackingType == 'binary') {
-      try {
-        let datos_mes = []
-        if (!selectedHabit.ultimo_mes) {
-          datos_mes = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+        // Actualizar conteo mensual (solo valores numéricos)
+        const valorAnterior = actividadData[mes] || 0;
+        await updateDoc(actividadRef, { [mes]: selectedHabit.trackingType === "binary" ? 1 : valorAnterior + cantidad });
+
+        // Actualizar tracking de último mes
+        let datos_mes = Array.isArray(actividadData.ultimo_mes) ? [...actividadData.ultimo_mes] : Array(31).fill(0);
+
+        const actFecha = actividadData.fecha?.split(" ") || [0, 0];
+        let dif_dias = 0;
+        if (date.getMonth() === parseInt(actFecha[1])) {
+          dif_dias = Math.max(0, date.getDate() - parseInt(actFecha[0]) - 1);
         } else {
-          datos_mes = selectedHabit.ultimo_mes;
+          dif_dias = diasMeses[parseInt(actFecha[1])] - parseInt(actFecha[0]) + date.getDate() - 1;
         }
+
         for (let i = 0; i < dif_dias; i++) {
           datos_mes.shift();
           datos_mes.push(0);
-          console.log("Datos del mes: ", datos_mes);
         }
+
+        // Registrar el día actual
         datos_mes.shift();
-        datos_mes.push(1);
-        console.log(datos_mes);
-        await updateDoc(actividadRef, {
-          ultimo_mes: datos_mes
-        });
-      } catch (e) {
-          console.log(e);
-      }
-    } else {
-      try {
-        let datos_mes = []
-        if (!selectedHabit.ultimo_mes) {
-          datos_mes = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-        } else {
-          datos_mes = selectedHabit.ultimo_mes;
+        datos_mes.push(selectedHabit.trackingType === "binary" ? 1 : parseInt(cantidad));
+
+        await updateDoc(actividadRef, { ultimo_mes: datos_mes });
+
+        // Actualizar racha de usuario
+        if (usuario.fecha !== fechaHoy) {
+          const usuarioRef = doc(db, "Usuarios", usuario.id);
+          await updateDoc(usuarioRef, {
+            racha: (usuario.racha || 0) + 1,
+            fecha: fechaHoy,
+          });
         }
-        for (let i = 0; i < dif_dias; i++) {
-          datos_mes.shift();
-          datos_mes.push(0);
-          console.log("Datos del mes: ", datos_mes);
-        }
-        datos_mes.shift();
-        datos_mes.push(parseInt(cantidad));
-        console.log(datos_mes);
-        await updateDoc(actividadRef, {
-          //[dia]: 1,
-          ultimo_mes: datos_mes
-        });
-      } catch (e) {
-          console.log(e);
+
+        closePopUp();
+      } catch (error) {
+        console.log("Error completando hábito:", error);
+        Alert.alert("Error", "No se pudo registrar el hábito");
       }
-    }
-    closePopUp();
-  };
+    };
+
+
+
 
   const transformArreglo = (arreglo) => {
-    const transformedData = arreglo.map((value) => ({
-      value: value,
-    }));
+    try {
 
-    return transformedData;
-  }
+      if (!Array.isArray(arreglo)) return [];
+
+      return arreglo.map((v) => ({ value: v }));
+    } catch (e) {
+      console.log("Error en transformArreglo:", e);
+      return [];
+    }
+  };
+
 
   return (
     <View style={styles.container}>
@@ -274,7 +226,8 @@ export default function HomeScreen({ navigation }) {
           contentContainerStyle={{ paddingVertical: 16, width: '100%', alignItems: 'left' }}
           renderItem={({ item }) => {
             const bg = item.color || '#4a90e2';
-            const reg = (dateAct == item.fecha) ? '#4df358ff' : '#ef4444';
+            const todayStr = new Date().getDate() + " " + new Date().getMonth();
+            const reg = (todayStr == item.fecha) ? '#4df358ff' : '#ef4444';
             const title = item.nombre || item.name || 'Actividad';
             const ultimoMes = transformArreglo(item.ultimo_mes);
             return (
