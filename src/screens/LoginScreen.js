@@ -16,6 +16,7 @@ import { useUser } from "../context/UserContext";
 import { getUserByEmail } from "../db/userQueries";
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from "../firebase";
+import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 
 const meses = {
   0: 31,
@@ -51,6 +52,19 @@ const LoginScreen = ({ navigation }) => {
   
   // Nuevo estado para manejar el mensaje de error visual
   const [errorMessage, setErrorMessage] = useState('');
+
+  const recuperaContrasena = (emailRec) => {
+    const auth = getAuth();
+    sendPasswordResetEmail(auth, emailRec)
+      .then(() => {
+        console.log("Correo enviado!")
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.log(errorCode, errorMessage);
+      });
+  }
 
   const fetchFecha = async () => {
     const userData = await getUserByEmail(email);
@@ -154,6 +168,15 @@ const LoginScreen = ({ navigation }) => {
           />
         </TouchableOpacity>
       </View>
+
+
+      {/* Forgot password link */}
+      <TouchableOpacity
+        style={styles.forgotLinkContainer}
+        onPress={() => recuperaContrasena(email)}
+      >
+        <Text style={styles.forgotLinkText}>¿Olvidaste tu contraseña?</Text>
+      </TouchableOpacity>
 
       {/* Mensaje de error visual */}
       {errorMessage ? (
@@ -281,6 +304,16 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#0D6EFD',
     fontWeight: 'bold',
+  },
+  forgotLinkContainer: {
+    alignSelf: 'flex-end',
+    marginBottom: 10,
+  },
+  forgotLinkText: {
+    color: '#0D6EFD',
+    fontWeight: '500',
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
 });
 
