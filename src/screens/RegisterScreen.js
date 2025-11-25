@@ -9,7 +9,6 @@ import {
   StatusBar,
   Image,
 } from 'react-native';
-// 1. Imports actualizados para evitar warnings
 import auth, { GoogleAuthProvider } from '@react-native-firebase/auth';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -25,10 +24,9 @@ const RegisterScreen = ({ navigation }) => {
   const [showVerifyPassword, setShowVerifyPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // 1. Configuración inicial de Google (Igual que en Login)
+  // Configuración inicial de Google
   useEffect(() => {
     GoogleSignin.configure({
-      // ¡PEGAR TU WEB CLIENT ID AQUÍ!
       webClientId: '919090861349-0fd8gtg71kbhvkb44q8asps91u7nchph.apps.googleusercontent.com',
     });
   }, []);
@@ -44,30 +42,28 @@ const RegisterScreen = ({ navigation }) => {
     return re.test(password);
   };
 
-  // --- LÓGICA GOOGLE (NUEVA) ---
+
   const handleGoogleRegister = async () => {
       setErrorMessage('');
       try {
-        // 1. Verificar servicios de Google
+        // verificar servicios de Google
         await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
-        // 2. Obtener tokens del usuario
+        //  tokens del usuario
         const userInfo = await GoogleSignin.signIn();
         const idToken = userInfo.idToken || userInfo.data?.idToken;
 
         if (!idToken) throw new Error('No se pudo obtener el token de Google');
 
-        // 3. Crear credencial para Firebase
+        //
         const googleCredential = GoogleAuthProvider.credential(idToken);
 
-        // 4. Autenticar en Firebase (Aquí ocurre la magia)
+        // Firebase
         const userCredential = await auth().signInWithCredential(googleCredential);
 
-        // 5. VALIDACIÓN ESTRICTA: ¿Es un usuario nuevo?
+        // ¿Es un usuario nuevo?
         if (!userCredential.additionalUserInfo.isNewUser) {
-          // --- CASO: EL USUARIO YA EXISTE ---
 
-          // Lo desconectamos inmediatamente para que no entre a la app
           await auth().signOut();
 
           // Le avisamos
@@ -81,11 +77,8 @@ const RegisterScreen = ({ navigation }) => {
               }
             ]
           );
-          return; // Detenemos la función aquí
-        }
+          return;
 
-        // --- CASO: ES UN USUARIO NUEVO ---
-        // Si llegamos aquí, es seguro guardar en la base de datos
         const googleUser = userCredential.user;
 
         await addDoc(collection(db, "Usuarios"), {
@@ -101,7 +94,6 @@ const RegisterScreen = ({ navigation }) => {
       } catch (error) {
         console.log("Error Google Register:", error);
 
-        // Si cerramos la sesión manualmente arriba, a veces puede lanzar un error de cancelación, lo ignoramos
         if (error.code === 'auth/user-cancelled') return;
 
         if (error && error.code === statusCodes.SIGN_IN_CANCELLED) {
@@ -114,7 +106,6 @@ const RegisterScreen = ({ navigation }) => {
       }
     };
 
-  // --- LÓGICA EMAIL/PASS (ORIGINAL) ---
   const handleRegister = async () => {
     setErrorMessage('');
 
@@ -152,7 +143,7 @@ const RegisterScreen = ({ navigation }) => {
         fecha: "0 0"
       });
 
-      // navigation.navigate('Login'); // Opcional
+      // navigation.navigate('Login');
     } catch (error) {
       if (error.code === 'auth/email-already-in-use') {
         setErrorMessage('Ese correo electrónico ya está en uso.');
@@ -246,7 +237,7 @@ const RegisterScreen = ({ navigation }) => {
 
       <Text style={styles.orText}>O con</Text>
 
-      {/* Botón de Google Actualizado */}
+      {/* Botón de Google  */}
       <TouchableOpacity style={styles.googleButton} onPress={handleGoogleRegister}>
         <Icon name="google" size={20} color="#FFF" />
         <Text style={styles.googleButtonText}>Google</Text>

@@ -31,7 +31,6 @@ const LoginScreen = ({ navigation }) => {
 
   useEffect(() => {
     GoogleSignin.configure({
-      // ¡IMPORTANTE! Reemplaza esto con tu Web Client ID de la consola de Firebase
       webClientId: '919090861349-0fd8gtg71kbhvkb44q8asps91u7nchph.apps.googleusercontent.com',
     });
   }, []);
@@ -58,7 +57,7 @@ const LoginScreen = ({ navigation }) => {
     }
 
     let date = new Date();
-
+  };
   const checkRacha = async (userEmail) => {
     try {
       const userData = await getUserByEmail(userEmail);
@@ -106,7 +105,6 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  // --- Lógica Corregida de Google ---
   const onGoogleButtonPress = async () => {
     setErrorMessage('');
     try {
@@ -115,20 +113,19 @@ const LoginScreen = ({ navigation }) => {
 
       // Obtener tokens
       const userInfo = await GoogleSignin.signIn();
-      const idToken = userInfo.idToken || userInfo.data?.idToken; // Manejo seguro de versiones nuevas/viejas
+      const idToken = userInfo.idToken || userInfo.data?.idToken; // Manejo seguro de versiones
 
       if (!idToken) {
         throw new Error('No se pudo obtener el token de Google');
       }
 
-      // 3. Crear credencial (USANDO LA FORMA NUEVA PARA EVITAR WARNINGS)
       const googleCredential = GoogleAuthProvider.credential(idToken);
 
       // Iniciar sesión en Firebase
       const userCredential = await auth().signInWithCredential(googleCredential);
       const googleUser = userCredential.user;
 
-      // Lógica de base de datos
+      // base de datos
       const userData = await getUserByEmail(googleUser.email);
 
       if (!userData) {
@@ -148,8 +145,7 @@ const LoginScreen = ({ navigation }) => {
     } catch (error) {
       console.log("Error Google:", error);
 
-      // --- AQUÍ ESTABA EL ERROR ROJO ---
-      // Usamos error?.code para evitar el crash si error es undefined
+
       if (error && error.code === statusCodes.SIGN_IN_CANCELLED) {
         setErrorMessage('Cancelaste el inicio de sesión.');
       } else if (error && error.code === statusCodes.IN_PROGRESS) {
