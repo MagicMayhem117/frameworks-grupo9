@@ -133,6 +133,12 @@ export default function HomeScreen({ navigation }) {
     const completeHabit = async (cantidad = 1) => {
       if (!selectedHabit) return;
 
+      if (selectedHabit.isGroupActivity && selectedHabit.status !== "active") {
+          Alert.alert("Pendiente", "Esta actividad grupal aún está pendiente de respuesta.");
+          closePopUp();
+          return;
+        }
+
       try {
         const actividadRef = doc(db, "Actividades", selectedHabit.id);
         const actividadSnap = await getDoc(actividadRef);
@@ -227,7 +233,7 @@ export default function HomeScreen({ navigation }) {
           renderItem={({ item }) => {
             const bg = item.color || '#4a90e2';
             const todayStr = new Date().getDate() + " " + new Date().getMonth();
-            const reg = (todayStr == item.fecha) ? '#4df358ff' : '#ef4444';
+            const reg = (todayStr == item.fecha) ? '#4df358ff' :item.isGroupActivity && item.status === "pending"  ? '#facc15' : '#ef4444';//amarillo para peniente
             const title = item.nombre || item.name || 'Actividad';
             const ultimoMes = transformArreglo(item.ultimo_mes);
             return (
