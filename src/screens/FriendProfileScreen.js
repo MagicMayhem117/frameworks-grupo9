@@ -14,7 +14,7 @@ import {
 //  Importamos la grafica de barras
 import { BarChart } from "react-native-gifted-charts"; 
 
-import { getActividadesPublicas, getSolicitudesActividades } from "../db/userQueries";
+import { getActividades ,getActividadesPublicas, getSolicitudesActividades } from "../db/userQueries";
 import { findProfile } from "../components/FindProfileImg";
 
 const { width } = Dimensions.get("window");
