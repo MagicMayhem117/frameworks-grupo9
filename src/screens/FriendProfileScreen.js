@@ -44,18 +44,28 @@ export default function FriendProfileScreen({ route, navigation }) {
         setAct([]);
       }
       //solicitudes de actividades
-      const solicitudesIds = profile?.solicitudesActividades || [];
-          if (solicitudesIds.length > 0) {
-            try {
-              const solicitudesData = await getSolicitudesActividades(solicitudesIds);
-              setSolicitudesActividades(solicitudesData);
-            } catch (err) {
-              console.error('Failed to load activity requests', err);
-              setSolicitudesActividades([]);
-            }
-          } else {
-            setSolicitudesActividades([]);
-          }
+      const solicitudes = profile?.solicitudes || [];
+
+      if (solicitudes.length > 0) {
+        try {
+          const solicitudesData = await Promise.all(
+            solicitudes.map(async (solicitud) => {
+              // Traer datos de la actividad
+              const actividadDoc = await getActividades(solicitud.habitId);
+              return {
+                ...solicitud,
+                ...actividadDoc[0], // getActividades devuelve un arreglo
+              };
+            })
+          );
+          setSolicitudesActividades(solicitudesData);
+        } catch (err) {
+          console.error('Failed to load activity requests', err);
+          setSolicitudesActividades([]);
+        }
+      } else {
+        setSolicitudesActividades([]);
+      }
     }
     fetchUser();
   }, [profile]);
@@ -183,7 +193,7 @@ export default function FriendProfileScreen({ route, navigation }) {
             <Text style={styles.deleteButtonText}>Eliminar amigo</Text>
           </TouchableOpacity>
         </View>
-        //solicitudes de actividades
+        {/*solicitudes de actividades*/}
         {solicitudesActividades.length > 0 && (
           <View style={styles.activitiesContainer}>
             <Text style={styles.sectionTitle}>Solicitudes de Actividades</Text>
