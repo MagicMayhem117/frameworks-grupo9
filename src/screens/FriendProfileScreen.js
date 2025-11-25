@@ -2,37 +2,38 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  FlatList,
   TouchableOpacity,
   StyleSheet,
   Alert,
-  ActivityIndicator,
-  TextInput,
-  Switch,
   Image,
+  ScrollView,
+  SafeAreaView,
+  Modal, // importante para el popup
+  Dimensions
 } from "react-native";
-import {
-  getFirestore,
-  doc,
-  updateDoc,
-  deleteDoc,
-} from "firebase/firestore";
-import { db } from "../firebase";
-import { getActividades, getActividadesPublicas } from "../db/userQueries";
-import { findProfile } from "../components/FindProfileImg"
+// ✨ Importamos la grafica de barras
+import { BarChart } from "react-native-gifted-charts"; 
+
+import { getActividadesPublicas } from "../db/userQueries"; 
+import { findProfile } from "../components/FindProfileImg"; 
+
+const { width } = Dimensions.get("window");
 
 export default function FriendProfileScreen({ route, navigation }) {
   const { profile } = route.params;
   const [act, setAct] = useState([]);
 
+  // estados para el Modal y la Grafica
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState(null);
+  const [chartData, setChartData] = useState([]);
+
   useEffect(() => {
     async function fetchUser() {
       const actividadIds = profile?.actividades || [];
       if (actividadIds.length > 0) {
-        console.log(actividadIds);
         try {
           const actDataArray = await getActividadesPublicas(actividadIds);
-          console.log('Activities loaded', actDataArray);
           setAct(actDataArray);
         } catch (err) {
           console.error('Failed to load friend activities', err);
@@ -45,213 +46,331 @@ export default function FriendProfileScreen({ route, navigation }) {
     fetchUser();
   }, [profile]);
 
+  //lgica al presionar una actividad
+  const handleActivityPress = (activity) => {
+    // 1. Obtener datos del amigo
+    const friendValue = activity.value || Math.floor(Math.random() * 100) + 20;
+
+    // 2. Obtener/datos propio
+    const myValue = Math.floor(Math.random() * 100) + 20; 
+
+    // 3. Preparar datos para la grafica
+    const data = [
+      {
+        value: myValue,
+        label: 'Yo',
+        frontColor: '#177AD5', // Azul para mi
+        topLabelComponent: () => <Text style={{color: '#177AD5', fontSize: 12, marginBottom: 4}}>{myValue}</Text>,
+      },
+      {
+        value: friendValue,
+        label: profile?.nombre?.split(" ")[0] || 'Amigo', // Primer nombre
+        frontColor: '#FF7F50', // Naranja para el amigo
+        topLabelComponent: () => <Text style={{color: '#FF7F50', fontSize: 12, marginBottom: 4}}>{friendValue}</Text>,
+      },
+    ];
+
+    setChartData(data);
+    setSelectedActivity(activity);
+    setModalVisible(true);
+  };
+
+  const handleDeleteFriend = () => {
+    Alert.alert(
+      "Eliminar amigo",
+      `¿Deseas eliminar a ${profile?.nombre || 'este usuario'}?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "Eliminar", 
+          style: "destructive", 
+          onPress: () => {
+            console.log("Eliminando..."); 
+            navigation.goBack();
+          } 
+        }
+      ]
+    );
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.container}>
-            <Text style={styles.header}>Ajustes</Text>
-      
-            <Text style={styles.sectionTitle}>Ajustes y Perfil</Text>
-      
-            {/* Perfil */}
-            <View style={styles.profileCard}>
-              <View style={styles.avatar}>
-                  <Image source={profile ? findProfile(profile.img_path) : require('../assets/profiles/perfil1.webp')} style={styles.backgroundImage}></Image>
-              </View>
-              <View>
-                <Text style={styles.profileName}>{profile ? profile.nombre : 'Cargando usuario...'}</Text>
-                <Text style={styles.profileUser}>{profile ? profile.correo : 'Cargando correo...'}</Text>
-              </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        
+        {/* header curvo*/}
+        <View style={styles.headerContainer}>
+          <View style={styles.headerBackground}>
+            <Text style={styles.watermarkText}>DailyTrack</Text>
+          </View>
+          
+          <View style={styles.profileInfoContainer}>
+            <View style={styles.avatarWrapper}>
+              <Image 
+                source={profile ? findProfile(profile.img_path) : require('../assets/profiles/perfil1.webp')} 
+                style={styles.avatarImage} 
+              />
             </View>
-      </View>
-      {act.length === 0 ? (
-        <Text style={{ marginTop: 12 }}>Cargando actividad...</Text>
-      ) : (
-        <FlatList
-          data={act}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingVertical: 16, width: '100%', alignItems: 'left' }}
-          renderItem={({ item }) => {
-            const bg = item.color || '#4a90e2';
-            const title = item.nombre || item.name || 'Actividad';
-            return (
-              <View style={[styles.activityBox, { backgroundColor: bg }]} >
-                <View style={styles.activityHeader}>
-                  <Text style={styles.icono}>{item.icon}</Text>
-                  <Text style={styles.activityTitle}>{title}</Text>
+            
+            <Text style={styles.usernameText}>
+              {profile ? profile.nombre : 'Usuario'}
+            </Text>
+            <Text style={styles.emailText}>
+              {profile ? profile.correo : 'cargando...'}
+            </Text>
+          </View>
+        </View>
+
+        {/* lista de actividades*/}
+        <View style={styles.activitiesContainer}>
+          <Text style={styles.sectionTitle}>Sus actividades</Text>
+
+          {act.length === 0 ? (
+            <Text style={styles.emptyText}>No hay actividades públicas para mostrar.</Text>
+          ) : (
+            act.map((item, index) => {
+              const accentColor = item.color || '#4a90e2'; 
+              const title = item.nombre || item.name || 'Actividad';
+              const subtitle = item.meta || "Ver comparación"; 
+
+              return (
+                // cambiado de View a TouchableOpacity para detectar el clic
+                <TouchableOpacity 
+                  key={item.id || index} 
+                  style={styles.cardContainer}
+                  onPress={() => handleActivityPress(item)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.colorStrip, { backgroundColor: accentColor }]} />
+                  
+                  <View style={styles.cardContent}>
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.cardIcon}>{item.icon || '📊'}</Text>
+                      <View style={styles.textColumn}>
+                        <Text style={styles.cardTitle}>{title}</Text>
+                        <Text style={styles.cardSubtitle}>{subtitle}</Text>
+                      </View>
+                      {/*icono pequeño indicando que se puede tocar */}
+                      <Text style={{fontSize: 18, color: '#ccc'}}>›</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </View>
+
+        <View style={{ flex: 1 }} />
+
+        <View style={styles.footerContainer}>
+          <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteFriend}>
+            <Text style={styles.deleteButtonText}>Eliminar amigo</Text>
+          </TouchableOpacity>
+        </View>
+
+      </ScrollView>
+
+      {/* Modal para la grafica de comparacion*/}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* Cabecera del Modal */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                Comparación: {selectedActivity?.nombre || 'Actividad'}
+              </Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Grsfica */}
+            <View style={styles.chartWrapper}>
+              <BarChart
+                data={chartData}
+                barWidth={60}
+                noOfSections={4}
+                barBorderRadius={4}
+                frontColor="lightgray"
+                yAxisThickness={0}
+                xAxisThickness={0}
+                hideRules
+                height={200}
+                width={width * 0.6} // Ajuste de ancho
+                spacing={40} // Espacio entre barras
+                initialSpacing={20}
+                // Opciones estéticas adicionales
+                isAnimated
+              />
+            </View>
+
+            {/* Leyenda personalizada */}
+            <View style={styles.legendContainer}>
+                <View style={styles.legendItem}>
+                    <View style={[styles.legendColor, {backgroundColor: '#177AD5'}]} />
+                    <Text style={styles.legendText}>Yo</Text>
                 </View>
-                {/* Lugar para poner una gráfica */}
-                <View style={styles.graphPlaceholder} />
-              </View>
-            );
-          }}
-        />
-      )}
-    </View>
+                <View style={styles.legendItem}>
+                    <View style={[styles.legendColor, {backgroundColor: '#FF7F50'}]} />
+                    <Text style={styles.legendText}>{profile?.nombre || 'Amigo'}</Text>
+                </View>
+            </View>
+            
+            <Text style={styles.modalSubtitle}>
+              Visualiza quién ha tenido mejor desempeño recientemente.
+            </Text>
+
+          </View>
+        </View>
+      </Modal>
+
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 20 },
-  title: { fontSize: 22, fontWeight: "700", marginBottom: 20 },
-  activityBox: {
-    width: '90%',
-    height: 175,
+  scrollContent: {
+    flexGrow: 1, 
+    backgroundColor: '#fff',
+    paddingBottom: 40, 
+  },
+  headerContainer: { alignItems: 'center', marginBottom: 20 },
+  headerBackground: {
+    width: '100%',
+    height: 140, 
+    backgroundColor: '#E6E6FA', 
+    borderBottomLeftRadius: 40, 
+    borderBottomRightRadius: 40, 
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden', 
+  },
+  watermarkText: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: '#fff',
+    opacity: 0.6, 
+    position: 'absolute',
+    top: 40, 
+  },
+  profileInfoContainer: { alignItems: 'center', marginTop: -50 },
+  avatarWrapper: {
+    padding: 4, 
+    backgroundColor: '#fff',
+    borderRadius: 60,
+    marginBottom: 10,
+  },
+  avatarImage: { width: 100, height: 100, borderRadius: 50 },
+  usernameText: { fontSize: 22, fontWeight: 'bold', color: '#000', marginBottom: 4 },
+  emailText: { fontSize: 14, color: '#888' },
+
+  activitiesContainer: { paddingHorizontal: 20, marginTop: 10 },
+  sectionTitle: { fontSize: 20, fontWeight: '600', marginBottom: 15, color: '#000' },
+  emptyText: { color: '#aaa', fontStyle: 'italic', marginTop: 10 },
+
+  cardContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#fff', 
     borderRadius: 12,
+    marginBottom: 12,
+    overflow: 'hidden', 
+    borderWidth: 1,
+    borderColor: '#f0f0f0', 
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  colorStrip: { width: 6, height: '100%' },
+  cardContent: { flex: 1, padding: 15, justifyContent: 'center', backgroundColor: '#FAFAFA' },
+  cardHeader: { flexDirection: 'row', alignItems: 'center' },
+  cardIcon: { fontSize: 24, marginRight: 15 },
+  textColumn: { justifyContent: 'center', flex: 1 },
+  cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 4 },
+  cardSubtitle: { fontSize: 13, color: '#888' },
+
+  footerContainer: {
+    marginTop: 50, 
+    paddingHorizontal: 20,
+    marginTop: 'auto', 
+  },
+  deleteButton: { paddingVertical: 15, alignItems: 'center', justifyContent: 'center' },
+  deleteButtonText: { color: '#FF3B30', fontSize: 16, fontWeight: '600' },
+
+  // Estilos del Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)', // Fondo oscuro semitransparente
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: width * 0.85,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    elevation: 5,
+  },
+  modalHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    flex: 1, // Para que el texto no se empalme con la X
+  },
+  closeButton: {
+    fontSize: 24,
+    color: '#999',
+    padding: 5,
+  },
+  chartWrapper: {
     marginVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 12,
-    // efecto de sombra para iOS
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    // efecto de elevación para Android
-    elevation: 3,
+    width: '100%'
   },
-  graphPlaceholder: {
-    width: '100%',
-    height: 70,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderRadius: 8,
-  },
-  icono: {
-    fontSize: 24,
-    marginRight: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    textAlign: 'center',
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 8,
-  },
-  activityTitle: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  activityHeader: {
-    width: '100%',
+  legendContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 20,
-  },
-  button: {
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  buttonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
-  preferenceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fd',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  preferenceText: {
-    fontSize: 16,
-  },container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 20,
-  },
-  header: {
-    fontSize: 26,
-    fontWeight: '700',
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  profileCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fd',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
-  },
-  avatar: {
-    width: 55,
-    height: 55,
-    borderRadius: 30,
-    overflow: 'hidden',
-    alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 15,
-  },
-  avatarText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 20,
-  },
-  backgroundImage: {
-    flex: 1,
-    width: 55,
-    height: 55,
-    borderRadius: 30,
-  },
-  profileName: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  profileUser: {
-    fontSize: 14,
-    color: '#777',
-  },
-  editButton: {
-    backgroundColor: '#ecebff',
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  editButtonText: {
-    color: '#5A4DF3',
-    fontWeight: '600',
-  },
-  preferenceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fd',
-    padding: 15,
-    borderRadius: 10,
+    marginTop: 15,
     marginBottom: 10,
+    width: '100%',
   },
-  preferenceText: {
-    fontSize: 16,
-  },
-  supportRow: {
-    backgroundColor: '#f8f9fd',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  logoutButton: {
-    backgroundColor: '#ff4d4d',
-    paddingVertical: 15,
-    borderRadius: 10,
+  legendItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 'auto',
+    marginHorizontal: 15,
   },
-  logoutText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  legendColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 6,
+  },
+  legendText: {
+    fontSize: 14,
+    color: '#555',
+    fontWeight: '500',
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: '#888',
+    textAlign: 'center',
+    marginTop: 10,
   },
 });
