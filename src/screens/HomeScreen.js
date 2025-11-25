@@ -276,7 +276,7 @@ export default function HomeScreen({ navigation }) {
             const bg = item.color || '#4a90e2';
             const reg = (dateAct == item.fecha) ? '#4df358ff' : '#ef4444';
             const title = item.nombre || item.name || 'Actividad';
-            const ultimoMes = transformArreglo(item.ultimo_mes);
+            const ultimoMes = transformArreglo(item.ultimo_mes || []);
             return (
               <TouchableOpacity
                 style={[styles.activityBox, { backgroundColor: bg }]}
