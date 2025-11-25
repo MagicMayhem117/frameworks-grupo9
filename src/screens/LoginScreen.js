@@ -48,7 +48,6 @@ const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { setStateEmail } = useUser();
   
   // Nuevo estado para manejar el mensaje de error visual
   const [errorMessage, setErrorMessage] = useState('');
@@ -101,7 +100,6 @@ const LoginScreen = ({ navigation }) => {
     }
     try {
       await auth().signInWithEmailAndPassword(email, password);
-      setStateEmail(email);
       await fetchFecha();
     } catch (error) {
       // Mostrar error en el layout en lugar de Alert
