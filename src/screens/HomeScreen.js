@@ -14,6 +14,7 @@ import HabitPopUp from '../components/HabitPopUp';
 import { listenUserByEmail, listenActividades } from "../db/userQueries";
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from "../firebase";
+import { LineChart, BarChart } from "react-native-gifted-charts";
 
 const meses = {
   0: "enero",
@@ -242,6 +243,14 @@ export default function HomeScreen({ navigation }) {
     closePopUp();
   };
 
+  const transformArreglo = (arreglo) => {
+    const transformedData = arreglo.map((value) => ({
+      value: value,
+    }));
+
+    return transformedData;
+  }
+
   return (
     <View style={styles.container}>
 
@@ -264,24 +273,37 @@ export default function HomeScreen({ navigation }) {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingVertical: 16, width: '100%', alignItems: 'left' }}
           renderItem={({ item }) => {
-            console.log("item");
             const bg = item.color || '#4a90e2';
             const reg = (dateAct == item.fecha) ? '#4df358ff' : '#ef4444';
             const title = item.nombre || item.name || 'Actividad';
+            const ultimoMes = transformArreglo(item.ultimo_mes);
             return (
               <TouchableOpacity
                 style={[styles.activityBox, { backgroundColor: bg }]}
                 onPress={() => openPopUp(item)}
               >
-                <View style={styles.activityHeader}>
-                  <Text style={styles.icono}>{item.icon}</Text>
-                  <Text style={styles.activityTitle}>{title}</Text>
-                  <View style={[styles.dispDisplay, {backgroundColor: reg}]}>
+                <View style={styles.activityRow}>
+                  <View style={styles.activityInfo}>
+                    <Text style={styles.icono}>{item.icon}</Text>
+                    <Text style={styles.activityTitle} numberOfLines={2} ellipsizeMode="tail">{title}</Text>
+                  </View>
+                  <View style={[styles.dispDisplay, {backgroundColor: reg}]}> 
                     <Text style={styles.disp}>{(dateAct == item.fecha) ? "Registrada" : "No Registrada"}</Text>
                   </View>
                 </View>
-                {/* Lugar para poner una gráfica */}
-                <View style={styles.graphPlaceholder} />
+                <View style={styles.graphPlaceholder}>
+                  <LineChart
+                    data={ultimoMes}
+                    spacing={8}
+                    initialSpacing={0}
+                    width={250}
+                    height={60}
+                    hideAxesAndRules
+                    hideDataPoints1
+                    thickness1={5}
+                    color1='rgba(48, 48, 48, 1)'
+                  />
+                </View>
               </TouchableOpacity>
             );
           }}
@@ -340,9 +362,12 @@ const styles = StyleSheet.create({
   },
   activityTitle: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '600',
-    marginBottom: 8,
+    flexShrink: 1,
+    flexWrap: 'wrap',
+    maxWidth: 160,
+    marginBottom: 0,
   },
   disp: {
     color: '#fff',
@@ -354,16 +379,29 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 12,
-    marginLeft: 'auto',
+    marginLeft: 8,
+    alignSelf: 'flex-start',
     justifyContent: 'center',
     alignItems: 'center',
+    minWidth: 90,
   },
   activityHeader: {
+    // legacy, not used
+  },
+  activityRow: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     marginBottom: 8,
+    gap: 8,
+  },
+  activityInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 8,
+    minWidth: 0,
   },
   icon: {
     fontSize: 26,

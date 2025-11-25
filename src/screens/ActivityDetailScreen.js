@@ -22,6 +22,7 @@ export default function ActivityDetailScreen({ route, navigation }) {
   const [guardando, setGuardando] = useState(false);
   const [publico, setPublico] = useState(activity.publico);
   const [ultimoMes, setUltimoMes] = useState([]);
+  const [meta, setMeta] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,6 +36,13 @@ export default function ActivityDetailScreen({ route, navigation }) {
     };
 
     fetchData();
+
+    const metaArray = Array(33).fill(activity.goal ? activity.goal : 1);
+    const transformedMeta = metaArray.map((value) => ({
+      value: value,
+    }));
+
+    setMeta(transformedMeta);
   }, []);
 
   const handleSave = async () => {
@@ -96,19 +104,45 @@ export default function ActivityDetailScreen({ route, navigation }) {
 
       <View style={{ marginBottom: 20 }}>
         {activity.trackingType == "binary" ? (
-          <BarChart
+          <LineChart
+            data2={ultimoMes}
+            data={meta}
+            spacing={10}
+            initialSpacing={0}
+            width={300}
+            height={150}
+            hideDataPoints1
+            hideDataPoints2
+            color1={activity.color}
+            thickness1={3}
+            thickness2={5}
+            color2='rgba(48, 48, 48, 1)'
+            stepValue={1}
+            noOfSections={1}
+          />
+          /*<BarChart
             data={ultimoMes}
             spacing={1}
             initialSpacing={0}
             barWidth={9}
             height={150}
             noOfSections={1}
-          />
+          />*/
         ) : (
           <LineChart
-            data={ultimoMes}
+            data2={ultimoMes}
+            data={meta}
             spacing={10}
             initialSpacing={0}
+            width={300}
+            height={150}
+            hideDataPoints1
+            hideDataPoints2
+            color1={activity.color}
+            thickness1={3}
+            thickness2={5}
+            color2='rgba(48, 48, 48, 1)'
+            stepValue={1}
           />
         )}
       </View>
