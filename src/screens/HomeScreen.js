@@ -133,7 +133,7 @@ export default function HomeScreen({ navigation }) {
     }*/
     console.log('Hábito completado con ID:', selectedHabit.id);
 
-    const actFecha = selectedHabit.fecha.split(" ");
+    const actFecha = selectedHabit.fecha ? selectedHabit.fecha.split(" ") : "0 0";
     console.log("Act fecha: ", actFecha);
 
     const actividadRef = doc(db, 'Actividades', selectedHabit.id);
