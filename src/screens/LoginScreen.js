@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +6,7 @@ import {
   StyleSheet,
   StatusBar,
   Image,
+  Alert,
 } from 'react-native';
 // 1. Importación Modular para evitar advertencias amarillas
 import auth, { GoogleAuthProvider } from '@react-native-firebase/auth';
@@ -16,7 +16,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getUserByEmail } from "../db/userQueries";
 import { doc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { db } from "../firebase";
-import { getAuth, sendPasswordResetEmail } from "firebase/auth";
+import React, { useState, useEffect } from 'react';
 
 const meses = {
   0: 31, 1: 28, 2: 31, 3: 30, 4: 31, 5: 30,
@@ -35,15 +35,29 @@ const LoginScreen = ({ navigation }) => {
     });
   }, []);
   const recuperaContrasena = (emailRec) => {
-    const auth = getAuth();
-    sendPasswordResetEmail(auth, emailRec)
+    if (!emailRec) {
+      Alert.alert("Error", "Por favor ingresa tu correo primero.");
+      return;
+    }
+
+    auth()
+      .sendPasswordResetEmail(emailRec)
       .then(() => {
-        console.log("Correo enviado!")
+        Alert.alert("¡Correo enviado!", "Revisa tu bandeja de entrada para restablecer tu contraseña.");
+        console.log("Correo enviado!");
       })
       .catch((error) => {
         const errorCode = error.code;
         const errorMessage = error.message;
         console.log(errorCode, errorMessage);
+
+        if (errorCode === 'auth/user-not-found') {
+           Alert.alert("Error", "No existe cuenta con ese correo.");
+        } else if (errorCode === 'auth/invalid-email') {
+           Alert.alert("Error", "El formato del correo no es válido.");
+        } else {
+           Alert.alert("Error", errorMessage);
+        }
       });
   }
 
@@ -90,15 +104,42 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  const handleLogin = async () => {
+const handleLogin = async () => {
     setErrorMessage('');
     if (email.length === 0 || password.length === 0) {
       setErrorMessage('Por favor, llena todos los campos.');
       return;
     }
     try {
-      await auth().signInWithEmailAndPassword(email, password);
-      await checkRacha(email);
+      const userCredential = await auth().signInWithEmailAndPassword(email.trim(), password);
+      const user = userCredential.user;
+
+      // --- NUEVA VALIDACIÓN DE SEGURIDAD ---
+      if (!user.emailVerified) {
+        await auth().signOut(); // Cerramos la sesión inmediatamente
+        Alert.alert(
+          'Correo no verificado',
+          'Debes verificar tu correo para poder iniciar sesión. Revisa tu bandeja de entrada (o spam).',
+          [
+            { text: 'OK', style: 'cancel' },
+            {
+              text: 'Reenviar correo',
+              onPress: async () => {
+                try {
+                  await user.sendEmailVerification();
+                  Alert.alert('Enviado', 'Se ha enviado un nuevo correo de verificación.');
+                } catch (e) {
+                  Alert.alert('Error', 'Espera unos minutos antes de pedir otro correo.');
+                }
+              }
+            }
+          ]
+        );
+        return; // Detenemos la función aquí
+      }
+
+      await checkRacha(email.trim());
+
     } catch (error) {
       setErrorMessage('Credenciales incorrectas. Inténtalo de nuevo.');
       console.log(error);

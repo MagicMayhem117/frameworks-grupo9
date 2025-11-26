@@ -78,7 +78,7 @@ const RegisterScreen = ({ navigation }) => {
             ]
           );
           return;
-
+        }
         const googleUser = userCredential.user;
 
         await addDoc(collection(db, "Usuarios"), {
@@ -127,16 +127,24 @@ const RegisterScreen = ({ navigation }) => {
     }
 
     try {
-      const userCredential = await auth().createUserWithEmailAndPassword(email, password);
+          const userCredential = await auth().createUserWithEmailAndPassword(email, password);
 
-      await userCredential.user.updateProfile({
-        displayName: nombre,
-      });
+          await userCredential.user.updateProfile({
+            displayName: nombre,
+          });
 
-      Alert.alert('¡Éxito!', 'Usuario registrado correctamente.');
+          // --- AGREGA ESTO AQUÍ ---
+          await userCredential.user.sendEmailVerification();
+          // ------------------------
 
-      await addDoc(collection(db, "Usuarios"), {
-        nombre: nombre,
+          // Cambia la alerta para avisar al usuario
+          Alert.alert(
+            '¡Verifica tu correo!',
+            'Se ha enviado un correo de verificación. Por favor revisa tu bandeja (y spam) para confirmar tu cuenta.'
+          );
+
+          await addDoc(collection(db, "Usuarios"), {
+            nombre: nombre,
         correo: email,
         racha: 0,
         img_path: 'perfil1',
