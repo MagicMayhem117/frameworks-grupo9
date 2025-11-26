@@ -133,6 +133,12 @@ export default function HomeScreen({ navigation }) {
     const completeHabit = async (cantidad = 1) => {
       if (!selectedHabit) return;
 
+      const fechaHoy = date.getDate() + " " + date.getMonth();
+      if (selectedHabit.fecha && selectedHabit.fecha == fechaHoy) {
+        closePopUp();
+        Alert.alert("¡Cuidado!", "Este hábito ya se ha completado hoy.")
+        return;
+      }
       if (selectedHabit.isGroupActivity && selectedHabit.status !== "active") {
           Alert.alert("Pendiente", "Esta actividad grupal aún está pendiente de respuesta.");
           closePopUp();
@@ -145,7 +151,6 @@ export default function HomeScreen({ navigation }) {
         if (!actividadSnap.exists()) return;
 
         const actividadData = actividadSnap.data();
-        const fechaHoy = date.getDate() + " " + date.getMonth();
         const mes = meses[date.getMonth()];
 
         // Actualizar fecha de la actividad
@@ -153,7 +158,7 @@ export default function HomeScreen({ navigation }) {
 
         // Actualizar conteo mensual (solo valores numéricos)
         const valorAnterior = actividadData[mes] || 0;
-        await updateDoc(actividadRef, { [mes]: selectedHabit.trackingType === "binary" ? 1 : valorAnterior + cantidad });
+        await updateDoc(actividadRef, { [mes]: selectedHabit.trackingType === "binary" ? valorAnterior + 1 : valorAnterior + cantidad });
 
         // Actualizar tracking de último mes
         let datos_mes = Array.isArray(actividadData.ultimo_mes) ? [...actividadData.ultimo_mes] : Array(31).fill(0);
