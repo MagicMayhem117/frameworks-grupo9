@@ -110,6 +110,72 @@ export function listenActividades(ids, onChange) {
 
 
 
+export async function getTopActivitiesByAdherence(ids, limit = 3) {
+  if (!ids || !Array.isArray(ids) || ids.length === 0) return [];
+  
+  const activities = [];
+  for (const id of ids) {
+    try {
+      const docRef = doc(db, "Actividades", id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap && docSnap.exists()) {
+        activities.push({ id: docSnap.id, ...docSnap.data() });
+      }
+    } catch (err) {
+      console.warn('Failed to fetch activity', id, err);
+    }
+  }
+
+  // Calculate adherence: count completed days vs. total days
+  // Assuming `ultimo_mes` is an array of booleans/numbers indicating completion
+  const withAdherence = activities.map((act) => {
+    let skippedDays = 0;
+    if (act.ultimo_mes && Array.isArray(act.ultimo_mes)) {
+      skippedDays = act.ultimo_mes.filter((day) => !day).length;
+    }
+    return { ...act, skippedDays };
+  });
+
+  // Sort by skipped days (ascending) to get best adherence first
+  withAdherence.sort((a, b) => a.skippedDays - b.skippedDays);
+
+  return withAdherence.slice(0, limit);
+}
+
+export async function getTopActivityByType(ids, trackingType) {
+  if (!ids || !Array.isArray(ids) || ids.length === 0) return null;
+  
+  const activities = [];
+  for (const id of ids) {
+    try {
+      const docRef = doc(db, "Actividades", id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap && docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.trackingType === trackingType) {
+          activities.push({ id: docSnap.id, ...data });
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch activity', id, err);
+    }
+  }
+
+  if (activities.length === 0) return null;
+
+  // Sort by adherence (skipped days)
+  const withAdherence = activities.map((act) => {
+    let skippedDays = 0;
+    if (act.ultimo_mes && Array.isArray(act.ultimo_mes)) {
+      skippedDays = act.ultimo_mes.filter((day) => !day).length;
+    }
+    return { ...act, skippedDays };
+  });
+
+  withAdherence.sort((a, b) => a.skippedDays - b.skippedDays);
+  return withAdherence[0];
+}
+
 export async function getAmigos(ids) {
   if (!ids) return [];
   const idsArray = Array.isArray(ids) ? ids : [ids];

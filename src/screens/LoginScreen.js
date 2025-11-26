@@ -116,36 +116,49 @@ const handleLogin = async () => {
 
       await user.reload();
 
-
       const updatedUser = auth().currentUser;
 
       if (!updatedUser.emailVerified) {
-        await auth().signOut(); // Cierra la sesión para que no entre a la app
+          await auth().signOut(); 
 
-        Alert.alert(
-          'Correo no verificado',
-          'Debes verificar tu correo para poder iniciar sesión. Revisa tu bandeja de entrada (o spam).',
-          [
-            { text: 'OK', style: 'cancel' },
-            {
-              text: 'Reenviar correo',
-              onPress: async () => {
-                try {
-
-                  await user.sendEmailVerification();
-                  Alert.alert('Enviado', 'Se ha enviado un nuevo correo de verificación.');
-                } catch (e) {
-                  console.log(e);
-                  Alert.alert('Error', 'Espera unos minutos antes de pedir otro correo.');
-                }
-              }
-            }
-          ]
-        );
-        return;
+          Alert.alert(
+              'Correo no verificado',
+              'Debes verificar tu correo para poder iniciar sesión. Revisa tu bandeja de entrada (o spam).',
+              [
+                  { text: 'OK', style: 'cancel' },
+                  {
+                      text: 'Reenviar correo',
+                      onPress: async () => {
+                          try {
+                              await user.sendEmailVerification();
+                              Alert.alert('Enviado', 'Se ha enviado un nuevo correo de verificación.');
+                          } catch (e) {
+                              console.log(e);
+                              Alert.alert('Error', 'Espera unos minutos antes de pedir otro correo.');
+                          }
+                      }
+                  }
+              ]
+          );
+          return; 
       }
 
-      await checkRacha(email.trim());
+      await fetchFecha(); 
+      await checkRacha(email.trim()); 
+
+      const today = new Date();
+      if (today.getDate() < 6) {
+          const userData = await getUserByEmail(email.trim()); 
+          const hasSeenMonthlyShare = userData?.monthlyShareDismissed || false;
+
+          if (!hasSeenMonthlyShare) {
+              navigation.replace('MonthlyShare');
+          } else {
+              navigation.replace('BottomTab');
+          }
+      } else {
+          navigation.replace('BottomTab');
+      }
 
     } catch (error) {
       setErrorMessage('Credenciales incorrectas o error de red.');
