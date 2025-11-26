@@ -23,6 +23,22 @@ export default function ActivityDetailScreen({ route, navigation }) {
   const [publico, setPublico] = useState(activity.publico);
   const [ultimoMes, setUltimoMes] = useState([]);
   const [meta, setMeta] = useState([]);
+  const [mesTotal, setMesTotal] = useState([]);
+
+  const meses = {
+    0: "enero",
+    1: "febrero",
+    2: "marzo",
+    3: "abril",
+    4: "mayo",
+    5: "junio",
+    6: "julio",
+    7: "agosto",
+    8: "septiembre",
+    9: "octubre",
+    10: "noviembre",
+    11: "diciembre",
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,6 +59,17 @@ export default function ActivityDetailScreen({ route, navigation }) {
     }));
 
     setMeta(transformedMeta);
+
+    const mesesArray = []
+
+    for (var i in meses) {
+      const mes = meses[i]
+      if (activity[mes]) {
+        mesesArray.push({value: activity[mes], label: mes[0].toUpperCase()})
+      }
+    }
+
+    setMesTotal(mesesArray);
   }, []);
 
   const handleSave = async () => {
@@ -84,6 +111,9 @@ export default function ActivityDetailScreen({ route, navigation }) {
     );
   };
 
+  const stepMes = (activity.goal * 30) / 10;
+  console.log(activity.goal, stepMes);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Editar Actividad</Text>
@@ -119,6 +149,7 @@ export default function ActivityDetailScreen({ route, navigation }) {
             color2='rgba(48, 48, 48, 1)'
             stepValue={1}
             noOfSections={1}
+            showFractionalValues={false}
           />
           /*<BarChart
             data={ultimoMes}
@@ -142,10 +173,28 @@ export default function ActivityDetailScreen({ route, navigation }) {
             thickness1={3}
             thickness2={5}
             color2='rgba(48, 48, 48, 1)'
+            showFractionalValues={false}
             stepValue={1}
           />
         )}
       </View>
+
+      <Text style={styles.chartTitle}>Progreso por meses</Text>
+
+      <View style={{ marginBottom: 20 }}>
+        <BarChart
+          data={mesTotal}
+          spacing={5}
+          initialSpacing={5}
+          width={300}
+          height={150}
+          hideDataPoints1
+          frontColor={activity.color}
+          stepValue={stepMes}
+          barWidth={20}
+          showFractionalValues={false}
+        />
+        </View>
 
       <TouchableOpacity
         style={[styles.button, { backgroundColor: "#4f46e5" }]}

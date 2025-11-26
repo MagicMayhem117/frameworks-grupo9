@@ -11,11 +11,11 @@ import {
   Modal, // importante para el popup
   Dimensions
 } from "react-native";
-// ✨ Importamos la grafica de barras
+//  Importamos la grafica de barras
 import { BarChart } from "react-native-gifted-charts"; 
 
-import { getActividadesPublicas } from "../db/userQueries"; 
-import { findProfile } from "../components/FindProfileImg"; 
+import { getActividades ,getActividadesPublicas, getSolicitudesActividades } from "../db/userQueries";
+import { findProfile } from "../components/FindProfileImg";
 
 const { width } = Dimensions.get("window");
 
@@ -27,6 +27,7 @@ export default function FriendProfileScreen({ route, navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [chartData, setChartData] = useState([]);
+  const [solicitudesActividades, setSolicitudesActividades] = useState([]);
 
   useEffect(() => {
     async function fetchUser() {
@@ -41,6 +42,29 @@ export default function FriendProfileScreen({ route, navigation }) {
         }
       } else {
         setAct([]);
+      }
+      //solicitudes de actividades
+      const solicitudes = profile?.solicitudes || [];
+
+      if (solicitudes.length > 0) {
+        try {
+          const solicitudesData = await Promise.all(
+            solicitudes.map(async (solicitud) => {
+              // Traer datos de la actividad
+              const actividadDoc = await getActividades(solicitud.habitId);
+              return {
+                ...solicitud,
+                ...actividadDoc[0], // getActividades devuelve un arreglo
+              };
+            })
+          );
+          setSolicitudesActividades(solicitudesData);
+        } catch (err) {
+          console.error('Failed to load activity requests', err);
+          setSolicitudesActividades([]);
+        }
+      } else {
+        setSolicitudesActividades([]);
       }
     }
     fetchUser();
@@ -169,6 +193,31 @@ export default function FriendProfileScreen({ route, navigation }) {
             <Text style={styles.deleteButtonText}>Eliminar amigo</Text>
           </TouchableOpacity>
         </View>
+        {/*solicitudes de actividades*/}
+        {solicitudesActividades.length > 0 && (
+          <View style={styles.activitiesContainer}>
+            <Text style={styles.sectionTitle}>Solicitudes de Actividades</Text>
+            {solicitudesActividades.map((item, index) => (
+              <TouchableOpacity
+                key={item.id || index}
+                style={styles.cardContainer}
+                onPress={() => handleActivityPress(item)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.colorStrip, { backgroundColor: item.color || '#4a90e2' }]} />
+                <View style={styles.cardContent}>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.cardIcon}>{item.icon || '📊'}</Text>
+                    <View style={styles.textColumn}>
+                      <Text style={styles.cardTitle}>{item.nombre || 'Actividad'}</Text>
+                      <Text style={styles.cardSubtitle}>Solicitud de actividad</Text>
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
       </ScrollView>
 

@@ -223,3 +223,25 @@ export async function getUsuarios(busc) {
 
   return usuarios;
 }
+// Retorna las actividades solicitadas de un usuario (si existen)
+export async function getSolicitudesActividades(userId) {
+  if (!userId) return [];
+
+  try {
+    const userRef = doc(db, "Usuarios", userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) return [];
+
+    const userData = userSnap.data();
+    const solicitudesIds = userData.solicitudesActividades || []; // Si no existe, retorna []
+
+    // Usar getActividades para traer los datos completos
+    if (solicitudesIds.length === 0) return [];
+    return await getActividades(solicitudesIds);
+
+  } catch (err) {
+    console.error("Error fetching solicitudes de actividades:", err);
+    return [];
+  }
+}

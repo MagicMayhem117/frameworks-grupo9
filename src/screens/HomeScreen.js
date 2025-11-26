@@ -133,13 +133,24 @@ export default function HomeScreen({ navigation }) {
     const completeHabit = async (cantidad = 1) => {
       if (!selectedHabit) return;
 
+      const fechaHoy = date.getDate() + " " + date.getMonth();
+      if (selectedHabit.fecha && selectedHabit.fecha == fechaHoy) {
+        closePopUp();
+        Alert.alert("¡Cuidado!", "Este hábito ya se ha completado hoy.")
+        return;
+      }
+      if (selectedHabit.isGroupActivity && selectedHabit.status !== "active") {
+          Alert.alert("Pendiente", "Esta actividad grupal aún está pendiente de respuesta.");
+          closePopUp();
+          return;
+        }
+
       try {
         const actividadRef = doc(db, "Actividades", selectedHabit.id);
         const actividadSnap = await getDoc(actividadRef);
         if (!actividadSnap.exists()) return;
 
         const actividadData = actividadSnap.data();
-        const fechaHoy = date.getDate() + " " + date.getMonth();
         const mes = meses[date.getMonth()];
 
         // Actualizar fecha de la actividad
@@ -147,7 +158,7 @@ export default function HomeScreen({ navigation }) {
 
         // Actualizar conteo mensual (solo valores numéricos)
         const valorAnterior = actividadData[mes] || 0;
-        await updateDoc(actividadRef, { [mes]: selectedHabit.trackingType === "binary" ? 1 : valorAnterior + cantidad });
+        await updateDoc(actividadRef, { [mes]: selectedHabit.trackingType === "binary" ? valorAnterior + 1 : valorAnterior + cantidad });
 
         // Actualizar tracking de último mes
         let datos_mes = Array.isArray(actividadData.ultimo_mes) ? [...actividadData.ultimo_mes] : Array(31).fill(0);
@@ -227,7 +238,7 @@ export default function HomeScreen({ navigation }) {
           renderItem={({ item }) => {
             const bg = item.color || '#4a90e2';
             const todayStr = new Date().getDate() + " " + new Date().getMonth();
-            const reg = (todayStr == item.fecha) ? '#4df358ff' : '#ef4444';
+            const reg = (todayStr == item.fecha) ? '#4df358ff' :item.isGroupActivity && item.status === "pending"  ? '#facc15' : '#ef4444';//amarillo para peniente
             const title = item.nombre || item.name || 'Actividad';
             const ultimoMes = transformArreglo(item.ultimo_mes || []);
             return (

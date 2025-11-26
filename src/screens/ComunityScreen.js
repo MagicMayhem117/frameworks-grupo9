@@ -330,16 +330,18 @@ const HomeScreen = ({ navigation }) => {
 
         <MyPopup visible={modalVisible} onClose={() => setModalVisible(false)}>
           <Text style={styles.modalTitle}>Buscar Usuarios</Text>
-          <TextInput
-              style={[styles.searchInput, { width: '100%', marginBottom: 15, borderWidth: 1, borderColor: COLORS.border, borderRadius: 8 }]}
-              value={busc}
-              onChangeText={async (text) => {
-                setBusc(text);
-                const res = await getUsuarios(text);
-                setUsuariosBusqueda(res);
-              }}
-              placeholder="Escribe un nombre..."
-          />
+          <View style={styles.searchBarContainer}>
+            <TextInput
+                style={[styles.searchInput, ]}
+                value={busc}
+                onChangeText={async (text) => {
+                  setBusc(text);
+                  const res = await getUsuarios(text);
+                  setUsuariosBusqueda(res);
+                }}
+                placeholder="Escribe un nombre..."
+            />
+          </View>
           {!usuariosBusqueda || usuariosBusqueda.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>No se encontraron usuarios.</Text>
