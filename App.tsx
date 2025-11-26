@@ -12,6 +12,7 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import RachaScreen from './src/screens/RachaScreen';
+import MonthlyShareScreen from './src/screens/MonthlyShareScreen';
 import ActivityDetailScreen from './src/screens/ActivityDetailScreen';
 import FriendProfileScreen from './src/screens/FriendProfileScreen';
 
@@ -87,6 +88,12 @@ const App = () => {
                 <Stack.Screen
                   name="Racha"
                   component={RachaScreen}
+                  options={{ headerShown: false }}
+                />
+
+                <Stack.Screen
+                  name="MonthlyShare"
+                  component={MonthlyShareScreen}
                   options={{ headerShown: false }}
                 />
 

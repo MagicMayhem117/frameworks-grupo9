@@ -115,6 +115,25 @@ const LoginScreen = ({ navigation }) => {
     try {
       await auth().signInWithEmailAndPassword(email, password);
       await fetchFecha();
+
+      // Check if today is between 1-5 of the month
+      const today = new Date();
+      if (today.getDate() < 6) {
+        // Fetch user to check if they've dismissed the monthly share screen
+        const userData = await getUserByEmail(email);
+        const hasSeenMonthlyShare = userData?.monthlyShareDismissed || false;
+        
+        if (!hasSeenMonthlyShare) {
+          // Navigate to MonthlyShareScreen on days 1-5 if not dismissed
+          navigation.replace('MonthlyShare');
+        } else {
+          // Skip to Home if already dismissed
+          navigation.replace('BottomTab');
+        }
+      } else {
+        // Normal navigation to Home
+        navigation.replace('BottomTab');
+      }
     } catch (error) {
       // Mostrar error en el layout en lugar de Alert
       setErrorMessage('Credenciales incorrectas. Por favor, inténtalo de nuevo.');
