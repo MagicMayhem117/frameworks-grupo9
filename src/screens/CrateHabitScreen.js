@@ -640,16 +640,6 @@ export default function CreateHabitScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/*actividades compartidas*/}
-        <Text style={styles.label}>Actividad Conjunta</Text>
-        <TouchableOpacity
-          style={[styles.toggleButton, isGroupActivity && styles.activeButton]}
-          onPress={() => setIsGroupActivity(!isGroupActivity)}
-        >
-          <Text style={isGroupActivity ? styles.activeText : styles.inactiveText}>
-            {isGroupActivity ? "Sí" : "No"}
-          </Text>
-        </TouchableOpacity>
 
         {/*checklist de amigos solo si el toggle anterior es true*/}
         {isGroupActivity && friends.length > 0 && (
