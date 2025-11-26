@@ -43,9 +43,13 @@ const RegisterScreen = ({ navigation }) => {
   };
 
 
-  const handleGoogleRegister = async () => {
+const handleGoogleRegister = async () => {
       setErrorMessage('');
       try {
+        // --- AGREGA ESTO IGUAL QUE EN EL LOGIN ---
+        try {
+          await GoogleSignin.signOut();
+        } catch (e) {}
         // verificar servicios de Google
         await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
@@ -133,25 +137,31 @@ const RegisterScreen = ({ navigation }) => {
             displayName: nombre,
           });
 
-          // --- AGREGA ESTO AQUÍ ---
+          // Envía la verificación
           await userCredential.user.sendEmailVerification();
-          // ------------------------
 
-          // Cambia la alerta para avisar al usuario
-          Alert.alert(
-            '¡Verifica tu correo!',
-            'Se ha enviado un correo de verificación. Por favor revisa tu bandeja (y spam) para confirmar tu cuenta.'
-          );
-
+          // Crea el documento en Firestore
           await addDoc(collection(db, "Usuarios"), {
             nombre: nombre,
-        correo: email,
-        racha: 0,
-        img_path: 'perfil1',
-        fecha: "0 0"
-      });
+            correo: email,
+            racha: 0,
+            img_path: 'perfil1',
+            fecha: "0 0"
+          });
 
-      // navigation.navigate('Login');
+          await auth().signOut();
+
+          Alert.alert(
+            '¡Verifica tu correo!',
+            'Cuenta creada. Se ha enviado un correo de verificación. Por favor confirma tu cuenta antes de iniciar sesión.',
+            [
+                {
+                    text: "Ir al Login",
+                    onPress: () => navigation.navigate('Login')
+                }
+            ]
+          );
+
     } catch (error) {
       if (error.code === 'auth/email-already-in-use') {
         setErrorMessage('Ese correo electrónico ya está en uso.');

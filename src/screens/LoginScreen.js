@@ -114,9 +114,14 @@ const handleLogin = async () => {
       const userCredential = await auth().signInWithEmailAndPassword(email.trim(), password);
       const user = userCredential.user;
 
-      // --- NUEVA VALIDACIÓN DE SEGURIDAD ---
-      if (!user.emailVerified) {
-        await auth().signOut(); // Cerramos la sesión inmediatamente
+      await user.reload();
+
+
+      const updatedUser = auth().currentUser;
+
+      if (!updatedUser.emailVerified) {
+        await auth().signOut(); // Cierra la sesión para que no entre a la app
+
         Alert.alert(
           'Correo no verificado',
           'Debes verificar tu correo para poder iniciar sesión. Revisa tu bandeja de entrada (o spam).',
@@ -126,45 +131,54 @@ const handleLogin = async () => {
               text: 'Reenviar correo',
               onPress: async () => {
                 try {
+
                   await user.sendEmailVerification();
                   Alert.alert('Enviado', 'Se ha enviado un nuevo correo de verificación.');
                 } catch (e) {
+                  console.log(e);
                   Alert.alert('Error', 'Espera unos minutos antes de pedir otro correo.');
                 }
               }
             }
           ]
         );
-        return; // Detenemos la función aquí
+        return;
       }
 
       await checkRacha(email.trim());
 
     } catch (error) {
-      setErrorMessage('Credenciales incorrectas. Inténtalo de nuevo.');
+      setErrorMessage('Credenciales incorrectas o error de red.');
       console.log(error);
     }
-  };
+};
 
   const onGoogleButtonPress = async () => {
-    setErrorMessage('');
-    try {
-      // Verificar servicios
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      setErrorMessage('');
+      try {
 
-      // Obtener tokens
-      const userInfo = await GoogleSignin.signIn();
-      const idToken = userInfo.idToken || userInfo.data?.idToken; // Manejo seguro de versiones
+        try {
+          await GoogleSignin.signOut();
+        } catch (e) {
 
-      if (!idToken) {
-        throw new Error('No se pudo obtener el token de Google');
-      }
+        }
 
-      const googleCredential = GoogleAuthProvider.credential(idToken);
+        // Verificar servicios
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
-      // Iniciar sesión en Firebase
-      const userCredential = await auth().signInWithCredential(googleCredential);
-      const googleUser = userCredential.user;
+        // Obtener tokens (Ahora sí abrirá la ventanita)
+        const userInfo = await GoogleSignin.signIn();
+        const idToken = userInfo.idToken || userInfo.data?.idToken;
+
+        if (!idToken) {
+          throw new Error('No se pudo obtener el token de Google');
+        }
+
+        const googleCredential = GoogleAuthProvider.credential(idToken);
+
+        // Iniciar sesión en Firebase
+        const userCredential = await auth().signInWithCredential(googleCredential);
+        const googleUser = userCredential.user;
 
       // base de datos
       const userData = await getUserByEmail(googleUser.email);
