@@ -7,6 +7,7 @@ import {
   Alert,
   ActivityIndicator,
   Switch,
+ ScrollView,
 } from "react-native";
 import {
   getFirestore,
@@ -115,6 +116,11 @@ export default function ActivityDetailScreen({ route, navigation }) {
   console.log(activity.goal, stepMes);
 
   return (
+  <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ padding: 20, paddingBottom: 50 }}
+      showsVerticalScrollIndicator={false}
+    >
     <View style={styles.container}>
       <Text style={styles.title}>Editar Actividad</Text>
 
@@ -215,6 +221,7 @@ export default function ActivityDetailScreen({ route, navigation }) {
         <Text style={styles.buttonText}>Eliminar Actividad</Text>
       </TouchableOpacity>
     </View>
+    </ScrollView>
   );
 }
 

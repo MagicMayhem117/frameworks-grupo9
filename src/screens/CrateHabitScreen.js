@@ -498,71 +498,94 @@ export default function CreateHabitScreen({ navigation }) {
     });
   }, []);
 
-  const handleCreate = async () => {
-    if (saving) return;
-    if (!habitName.trim()) {
-      setMessage("Debes seleccionar un hábito.");
-      return;
-    }
-    if (!usuario || !usuario.id) {
-      setMessage("No se pudo obtener la información del usuario.");
-      return;
-    }
-    if (!userId) {
-      setMessage("Usuario no autenticado.");
-      return;
-    }
-    if (isQuantitative && (Number(dailyGoal) <= 0 || isNaN(Number(dailyGoal)))) {
-      setMessage("La meta diaria debe ser un número mayor a 0.");
-      return;
-    }
-
-    setSaving(true);
-    setMessage("");
-
-    try {
-      const actDoc = await addDoc(collection(db, "Actividades"), {
-        name: habitName,
-        usuario_id: usuario.id,
-        trackingType: isQuantitative ? "quantitative" : "binary",
-        goal: isQuantitative ? Number(dailyGoal) : 1,
-        unit: isQuantitative ? unit.trim() : "completado",
-        isGroupActivity: isGroupActivity,
-        icon: iconColor.icon,
-        color: iconColor.color,
-        friends: amigosSeleccionados,
-        status: isGroupActivity ? "pending" : "active",
-      });
-
-      for (const friendId of amigosSeleccionados) {
-        const friendRef = doc(db, "Usuarios", friendId);
-        await updateDoc(friendRef, {
-          solicitudes: arrayUnion({
-            habitId: actDoc.id,
-            from: usuario.id,
-            status: "pending",
-            date: new Date()
-          })
-        });
+    const handleCreate = async () => {
+      if (saving) return;
+      if (!habitName.trim()) {
+        setMessage("Debes seleccionar un hábito.");
+        return;
+      }
+      if (!usuario || !usuario.id) {
+        setMessage("No se pudo obtener la información del usuario.");
+        return;
+      }
+      if (!userId) {
+        setMessage("Usuario no autenticado.");
+        return;
+      }
+      if (isQuantitative && (Number(dailyGoal) <= 0 || isNaN(Number(dailyGoal)))) {
+        setMessage("La meta diaria debe ser un número mayor a 0.");
+        return;
       }
 
-      await updateDoc(doc(db, "Usuarios", usuario.id), {
-        actividades: arrayUnion(actDoc.id),
-      });
+      setSaving(true);
+      setMessage("");
 
-      setMessage("¡Hábito creado con éxito!");
-      setHabitName("");
-      setDailyGoal("1");
-      setUnit("veces");
-      setIconColor({ icon: "✨", color: "#4f46e5" });
-      setSelectedDays(DAYS_OF_WEEK.map((d) => d.key));
-      navigation.navigate("Stats");
-    } catch (err) {
-      setMessage(`Error al guardar: ${err.message}`);
-    } finally {
-      setSaving(false);
-    }
-  };
+      try {
+        // 1) Crear documento de actividad en la colección "Actividades"
+        const actRef = await addDoc(collection(db, "Actividades"), {
+          name: habitName,
+          usuario_id: usuario.id,
+          trackingType: isQuantitative ? "quantitative" : "binary",
+          goal: isQuantitative ? Number(dailyGoal) : 1,
+          unit: isQuantitative ? unit.trim() : "completado",
+          isGroupActivity: isGroupActivity,
+          icon: iconColor.icon,
+          color: iconColor.color,
+          friends: amigosSeleccionados || [],
+          // status: si es grupal lo ponemos activo directamente
+          status: isGroupActivity ? "active" : "active",
+          createdAt: new Date(),
+          // campos opcionales útiles para lógica posterior
+          participantes: isGroupActivity ? [usuario.id, ...(amigosSeleccionados || [])] : [usuario.id],
+          selectedDays: selectedDays || DAYS_OF_WEEK.map(d => d.key),
+        });
+
+        // 2) Asegurarnos de que el documento contenga su propio id (opcional, pero útil)
+        try {
+          await updateDoc(actRef, { id: actRef.id });
+        } catch (err) {
+          // no crítico; continuar si falla
+          console.warn("No se pudo escribir id en la actividad:", err);
+        }
+
+        // 3) Añadir el id de la actividad al array 'actividades' del creador
+        await updateDoc(doc(db, "Usuarios", usuario.id), {
+          actividades: arrayUnion(actRef.id),
+        });
+
+        // 4) Si es actividad grupal, agregar la actividad directamente a cada amigo seleccionado
+        if (isGroupActivity && Array.isArray(amigosSeleccionados) && amigosSeleccionados.length > 0) {
+          // Hacemos las actualizaciones en paralelo (pero con control de errores)
+          const updates = amigosSeleccionados.map(async (friendId) => {
+            try {
+              await updateDoc(doc(db, "Usuarios", friendId), {
+                actividades: arrayUnion(actRef.id),
+              });
+            } catch (err) {
+              console.warn(`No se pudo añadir actividad al usuario ${friendId}:`, err);
+              // No hacemos throw para no rompertodo si falla un amigo
+            }
+          });
+
+          await Promise.all(updates);
+        }
+
+        // 5) Fin - feedback y reset UI
+        setMessage("¡Hábito creado y agregado al Home de los participantes!");
+        setHabitName("");
+        setDailyGoal("1");
+        setUnit("veces");
+        setIconColor({ icon: "✨", color: "#4f46e5" });
+        setSelectedDays(DAYS_OF_WEEK.map((d) => d.key));
+        setAmigosSeleccionados([]);
+        navigation.navigate("Stats");
+      } catch (err) {
+        setMessage(`Error al guardar: ${err.message}`);
+      } finally {
+        setSaving(false);
+      }
+    };
+
 
   if (loading) {
     return (
