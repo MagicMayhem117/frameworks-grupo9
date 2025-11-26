@@ -12,7 +12,7 @@ import {
   Dimensions
 } from "react-native";
 //  Importamos la grafica de barras
-import { BarChart } from "react-native-gifted-charts"; 
+import { LineChart } from "react-native-gifted-charts"; 
 
 import { getActividades ,getActividadesPublicas, getSolicitudesActividades } from "../db/userQueries";
 import { findProfile } from "../components/FindProfileImg";
@@ -26,6 +26,7 @@ export default function FriendProfileScreen({ route, navigation }) {
   // estados para el Modal y la Grafica
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
+  const [trackingType, setTrackingType] = useState(false);
   const [chartData, setChartData] = useState([]);
   const [solicitudesActividades, setSolicitudesActividades] = useState([]);
 
@@ -79,22 +80,18 @@ export default function FriendProfileScreen({ route, navigation }) {
     const myValue = Math.floor(Math.random() * 100) + 20; 
 
     // 3. Preparar datos para la grafica
-    const data = [
-      {
-        value: myValue,
-        label: 'Yo',
-        frontColor: '#177AD5', // Azul para mi
-        topLabelComponent: () => <Text style={{color: '#177AD5', fontSize: 12, marginBottom: 4}}>{myValue}</Text>,
-      },
-      {
-        value: friendValue,
-        label: profile?.nombre?.split(" ")[0] || 'Amigo', // Primer nombre
-        frontColor: '#FF7F50', // Naranja para el amigo
-        topLabelComponent: () => <Text style={{color: '#FF7F50', fontSize: 12, marginBottom: 4}}>{friendValue}</Text>,
-      },
-    ];
+    const arregloGrafica = activity.ultimo_mes || [];
 
-    setChartData(data);
+    const transformedData = arregloGrafica.map((value) => ({
+      value: value,
+    }));
+
+    if (activity.trackingType == "binary") {
+      setTrackingType(true);
+    }
+
+    setChartData(transformedData);
+
     setSelectedActivity(activity);
     setModalVisible(true);
   };
@@ -242,39 +239,23 @@ export default function FriendProfileScreen({ route, navigation }) {
 
             {/* Grsfica */}
             <View style={styles.chartWrapper}>
-              <BarChart
-                data={chartData}
-                barWidth={60}
-                noOfSections={4}
-                barBorderRadius={4}
-                frontColor="lightgray"
-                yAxisThickness={0}
-                xAxisThickness={0}
-                hideRules
-                height={200}
-                width={width * 0.6} // Ajuste de ancho
-                spacing={40} // Espacio entre barras
-                initialSpacing={20}
-                // Opciones estéticas adicionales
+              <LineChart
+                data2={chartData}
+                spacing={8}
+                initialSpacing={0}
+                width={250}
+                height={150}
+                hideDataPoints2
+                thickness2={5}
+                color2='rgba(48, 48, 48, 1)'
+                stepValue={1}
+                noOfSections={trackingType ? 1 : 10}
+                showFractionalValues={false}
                 isAnimated
               />
             </View>
 
-            {/* Leyenda personalizada */}
-            <View style={styles.legendContainer}>
-                <View style={styles.legendItem}>
-                    <View style={[styles.legendColor, {backgroundColor: '#177AD5'}]} />
-                    <Text style={styles.legendText}>Yo</Text>
-                </View>
-                <View style={styles.legendItem}>
-                    <View style={[styles.legendColor, {backgroundColor: '#FF7F50'}]} />
-                    <Text style={styles.legendText}>{profile?.nombre || 'Amigo'}</Text>
-                </View>
-            </View>
             
-            <Text style={styles.modalSubtitle}>
-              Visualiza quién ha tenido mejor desempeño recientemente.
-            </Text>
 
           </View>
         </View>
