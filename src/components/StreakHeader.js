@@ -4,6 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useStreak } from '../context/StreakContext';
 import { useUser } from "../context/UserContext";
 import { getUserByEmail } from "../db/userQueries";
+import { listenUserByEmail } from "../db/userQueries";
+
 
 const StreakHeader = () => {
   //const { streak } = useStreak();
@@ -12,23 +14,19 @@ const StreakHeader = () => {
   const [streak, setStreak] = useState(0);
 
   useEffect(() => {
-      const fetchStreak = async () => {
-        if (email) {
-          try {
-            const userData = await getUserByEmail(email);
-            if (userData && userData.racha !== undefined) {
-              setStreak(userData.racha);
-            } else {
-              setStreak(0);
-            }
-          } catch (error) {
-            console.error("Error al obtener racha:", error);
-          }
-        }
-      };
-  
-      fetchStreak();
-    }, [email]);
+    if (!email) return;
+
+    const unsubscribe = listenUserByEmail(email, (userData) => {
+      if (userData && userData.racha !== undefined) {
+        setStreak(userData.racha); // actualiza la racha
+      } else {
+        setStreak(0);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [email]);
+
 
   return (
     <TouchableOpacity

@@ -15,7 +15,7 @@ import auth from "@react-native-firebase/auth";
 import { db } from "../firebase";
 import { doc, setDoc, collection, addDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { useUser } from "../context/UserContext";
-import { getUserByEmail } from "../db/userQueries";
+import { getUserByEmail, getAmigos } from "../db/userQueries";
 import Icon from "react-native-vector-icons/Ionicons";
 
 // ICONS & COLORS
@@ -436,6 +436,7 @@ const FrequencyModal = ({ visible, onClose, onSelect, currentDays }) => {
 // ----------------------------------------------------------------------
 export default function CreateHabitScreen({ navigation }) {
   const [habitName, setHabitName] = useState("");
+  const [isGroupActivity, setIsGroupActivity] = useState(false);
   const [isQuantitative, setIsQuantitative] = useState(true);
   const [dailyGoal, setDailyGoal] = useState("1");
   const [unit, setUnit] = useState("veces");
@@ -444,12 +445,20 @@ export default function CreateHabitScreen({ navigation }) {
   const [showHabitModal, setShowHabitModal] = useState(false);
   const [showIconModal, setShowIconModal] = useState(false);
   const [showFreqModal, setShowFreqModal] = useState(false);
+  const [friends, setFriends] = useState([]);
+  const [amigosSeleccionados, setAmigosSeleccionados] = useState([]);
   const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const { email } = useUser();
   const [usuario, setUsuario] = useState(null);
+  const toggleFriendSelection = (id) => {//mantiene actualizada la checklist de amigos
+    setSelectedFriends((prev) =>
+      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
+    );
+  };
+
 
   useEffect(() => {
     if (!email) return;
@@ -458,6 +467,29 @@ export default function CreateHabitScreen({ navigation }) {
       setUsuario(data);
     })();
   }, [email]);
+    //amigos desde firebase
+  useEffect(() => {
+    if (!usuario) return;
+
+    let isActive = true;
+    const fetchFriends = async () => {
+      try {
+        const amigosIds = usuario.amigos || [];
+        if (amigosIds.length > 0) {
+          const amData = await getAmigos(amigosIds);
+          if (isActive) setFriends(amData);
+        } else {
+          if (isActive) setFriends([]);
+        }
+      } catch (err) {
+        console.error(err);
+        if (isActive) setFriends([]);
+      }
+    };
+
+    fetchFriends();
+    return () => { isActive = false; };
+  }, [usuario]);
 
   useEffect(() => {
     return auth().onAuthStateChanged((u) => {
@@ -495,9 +527,24 @@ export default function CreateHabitScreen({ navigation }) {
         trackingType: isQuantitative ? "quantitative" : "binary",
         goal: isQuantitative ? Number(dailyGoal) : 1,
         unit: isQuantitative ? unit.trim() : "completado",
+        isGroupActivity: isGroupActivity,
         icon: iconColor.icon,
         color: iconColor.color,
+        friends: amigosSeleccionados,
+        status: isGroupActivity ? "pending" : "active",
       });
+
+      for (const friendId of amigosSeleccionados) {
+        const friendRef = doc(db, "Usuarios", friendId);
+        await updateDoc(friendRef, {
+          solicitudes: arrayUnion({
+            habitId: actDoc.id,
+            from: usuario.id,
+            status: "pending",
+            date: new Date()
+          })
+        });
+      }
 
       await updateDoc(doc(db, "Usuarios", usuario.id), {
         actividades: arrayUnion(actDoc.id),
@@ -569,6 +616,53 @@ export default function CreateHabitScreen({ navigation }) {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/*actividades compartidas*/}
+        <Text style={styles.label}>Actividad Conjunta</Text>
+        <TouchableOpacity
+          style={[styles.toggleButton, isGroupActivity && styles.activeButton]}
+          onPress={() => setIsGroupActivity(!isGroupActivity)}
+        >
+          <Text style={isGroupActivity ? styles.activeText : styles.inactiveText}>
+            {isGroupActivity ? "Sí" : "No"}
+          </Text>
+        </TouchableOpacity>
+
+        {/*checklist de amigos solo si el toggle anterior es true*/}
+        {isGroupActivity && friends.length > 0 && (
+          <View style={{ marginTop: 15 }}>
+            <Text style={{ fontWeight: '600', marginBottom: 5 }}>Selecciona amigos:</Text>
+            {friends.map(friend => (
+              <TouchableOpacity
+                key={friend.id}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 5
+                }}
+                onPress={() => {
+                  if (amigosSeleccionados.includes(friend.id)) {
+                    setAmigosSeleccionados(prev => prev.filter(id => id !== friend.id));
+                  } else {
+                    setAmigosSeleccionados(prev => [...prev, friend.id]);
+                  }
+                }}
+              >
+                <View style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 4,
+                  borderWidth: 1,
+                  borderColor: '#555',
+                  marginRight: 10,
+                  backgroundColor: amigosSeleccionados.includes(friend.id) ? '#5A4DF3' : '#FFF'
+                }} />
+                <Text>{friend.nombre}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
 
         {isQuantitative && (
           <View style={styles.row}>

@@ -1,58 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   StatusBar,
-  Image, // Importamos Image
+  Image,
 } from 'react-native';
-import auth from '@react-native-firebase/auth';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+// 1. Importación Modular para evitar advertencias amarillas
+import auth, { GoogleAuthProvider } from '@react-native-firebase/auth';
+// 2. Importamos statusCodes para manejar errores de Google correctamente
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useUser } from "../context/UserContext";
 import { getUserByEmail } from "../db/userQueries";
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { db } from "../firebase";
 import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 
 const meses = {
-  0: 31,
-  1: 28,
-  2: 31,
-  3: 30,
-  4: 31,
-  5: 30,
-  6: 31,
-  7: 31,
-  8: 30,
-  9: 31,
-  10: 30,
-  11: 31,
-}
-
-// Funcion para Google Sign-In
-async function onGoogleButtonPress() {
-  try {
-    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-    const { idToken } = await GoogleSignin.signIn();
-    const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-    return auth().signInWithCredential(googleCredential);
-  } catch (error) {
-    console.log(error);
-  }
-}
+  0: 31, 1: 28, 2: 31, 3: 30, 4: 31, 5: 30,
+  6: 31, 7: 31, 8: 30, 9: 31, 10: 30, 11: 31,
+};
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  
-  // Nuevo estado para manejar el mensaje de error visual
   const [errorMessage, setErrorMessage] = useState('');
 
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: '919090861349-0fd8gtg71kbhvkb44q8asps91u7nchph.apps.googleusercontent.com',
+    });
+  }, []);
   const recuperaContrasena = (emailRec) => {
     const auth = getAuth();
     sendPasswordResetEmail(auth, emailRec)
@@ -76,64 +57,116 @@ const LoginScreen = ({ navigation }) => {
     }
 
     let date = new Date();
+  };
+  const checkRacha = async (userEmail) => {
+    try {
+      const userData = await getUserByEmail(userEmail);
+      if (!userData) return;
 
-    console.log(fecha);
+      let fecha = userData.fecha || "0 0";
+      let date = new Date();
+      const fechaRacha = fecha.split(" ");
+      let perdido = false;
 
-    const fechaRacha = fecha.split(" ");
-
-    let perdido = false;
-
-    if (date.getMonth() == parseInt(fechaRacha[1])) {
-      if ((date.getDate() - parseInt(fechaRacha[0])) > 1) {
-        console.log("Usuario ha perdido su racha.")
-        perdido = true;
+      if (date.getMonth() == parseInt(fechaRacha[1])) {
+        if ((date.getDate() - parseInt(fechaRacha[0])) > 1) {
+          perdido = true;
+        }
+      } else {
+        if (meses[parseInt(fechaRacha[1])] > parseInt(fechaRacha[0])) {
+          perdido = true;
+        } else if (date.getDate() > 1) {
+          perdido = true;
+        }
       }
-    } else {
-      if (meses[parseInt(fechaRacha[1])] > parseInt(fechaRacha[0])) {
-        console.log("Usuario ha perdido su racha.")
-        perdido = true;
-      } else if (date.getDate() > 1) {
-        console.log("Usuario ha perdido su racha.")
-        perdido = true;
+
+      if (perdido && userData.id) {
+        console.log("Usuario ha perdido su racha.");
+        const usuarioRef = doc(db, "Usuarios", userData.id);
+        await updateDoc(usuarioRef, { racha: 0 });
       }
-    }
-    if (perdido) {
-      const usuarioRef = doc(db, "Usuarios", userData.id);
-      await updateDoc(usuarioRef, {
-        racha: 0
-      });
+    } catch (e) {
+      console.log("Error verificando racha:", e);
     }
   };
 
   const handleLogin = async () => {
-    setErrorMessage(''); // Limpiar errores previos
-
+    setErrorMessage('');
     if (email.length === 0 || password.length === 0) {
       setErrorMessage('Por favor, llena todos los campos.');
       return;
     }
     try {
       await auth().signInWithEmailAndPassword(email, password);
-      await fetchFecha();
+      await checkRacha(email);
     } catch (error) {
-      // Mostrar error en el layout en lugar de Alert
-      setErrorMessage('Credenciales incorrectas. Por favor, inténtalo de nuevo.');
+      setErrorMessage('Credenciales incorrectas. Inténtalo de nuevo.');
       console.log(error);
+    }
+  };
+
+  const onGoogleButtonPress = async () => {
+    setErrorMessage('');
+    try {
+      // Verificar servicios
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+      // Obtener tokens
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = userInfo.idToken || userInfo.data?.idToken; // Manejo seguro de versiones
+
+      if (!idToken) {
+        throw new Error('No se pudo obtener el token de Google');
+      }
+
+      const googleCredential = GoogleAuthProvider.credential(idToken);
+
+      // Iniciar sesión en Firebase
+      const userCredential = await auth().signInWithCredential(googleCredential);
+      const googleUser = userCredential.user;
+
+      // base de datos
+      const userData = await getUserByEmail(googleUser.email);
+
+      if (!userData) {
+        await addDoc(collection(db, "Usuarios"), {
+          nombre: googleUser.displayName || "Usuario Google",
+          correo: googleUser.email,
+          racha: 0,
+          img_path: 'perfil1',
+          fecha: "0 0"
+        });
+      } else {
+        await checkRacha(googleUser.email);
+      }
+
+      console.log('Login con Google exitoso');
+
+    } catch (error) {
+      console.log("Error Google:", error);
+
+
+      if (error && error.code === statusCodes.SIGN_IN_CANCELLED) {
+        setErrorMessage('Cancelaste el inicio de sesión.');
+      } else if (error && error.code === statusCodes.IN_PROGRESS) {
+        setErrorMessage('Ya hay un inicio de sesión en curso.');
+      } else if (error && error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        setErrorMessage('Servicios de Google Play no disponibles.');
+      } else {
+        // Si el error no tiene código o es otro, mostramos mensaje genérico
+        setErrorMessage('Error al conectar con Google.');
+      }
     }
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#121212" barStyle="light-content" />
+      <StatusBar backgroundColor="#000000" barStyle="light-content" />
 
-      <Image
-        source={require('../assets/Logo_0.png')}
-        style={styles.logo}
-      />
+      <Image source={require('../assets/Logo_0.png')} style={styles.logo} />
 
       <Text style={styles.title}>Inicia sesión</Text>
 
-      {/* Campo de correo */}
       <View style={styles.inputContainer}>
         <Icon name="at" size={20} color="#888" style={styles.inputIcon} />
         <TextInput
@@ -141,14 +174,12 @@ const LoginScreen = ({ navigation }) => {
           placeholder="Enter your Email"
           placeholderTextColor="#888"
           value={email}
-          // Al escribir, actualizamos el valor y borramos el error
           onChangeText={(text) => { setEmail(text); setErrorMessage(''); }}
           keyboardType="email-address"
           autoCapitalize="none"
         />
       </View>
 
-      {/* Campo de contraseña con icono de ojo */}
       <View style={styles.inputContainer}>
         <Icon name="lock-outline" size={20} color="#888" style={styles.inputIcon} />
         <TextInput
@@ -156,16 +187,11 @@ const LoginScreen = ({ navigation }) => {
           placeholder="Enter your Password"
           placeholderTextColor="#888"
           value={password}
-          // Al escribir, actualizamos el valor y borramos el error
           onChangeText={(text) => { setPassword(text); setErrorMessage(''); }}
           secureTextEntry={!showPassword}
         />
         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-          <Icon
-            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-            size={22}
-            color="#888"
-          />
+          <Icon name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#888" />
         </TouchableOpacity>
       </View>
 
@@ -186,20 +212,17 @@ const LoginScreen = ({ navigation }) => {
         </View>
       ) : null}
 
-      {/* Boton de inicio de sesión */}
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Sign In</Text>
       </TouchableOpacity>
 
       <Text style={styles.orText}>O con</Text>
 
-      {/* Boton de Google */}
       <TouchableOpacity style={styles.googleButton} onPress={onGoogleButtonPress}>
         <Icon name="google" size={20} color="#FFF" />
         <Text style={styles.googleButtonText}>Google</Text>
       </TouchableOpacity>
 
-      {/* Enlace de registro */}
       <TouchableOpacity onPress={() => navigation.navigate('Register')}>
         <Text style={styles.footerText}>
           ¿No tienes cuenta? <Text style={styles.linkText}>Sign Up</Text>
@@ -209,7 +232,6 @@ const LoginScreen = ({ navigation }) => {
   );
 };
 
-// Estilos
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -220,9 +242,9 @@ const styles = StyleSheet.create({
   },
   logo: {
     marginBottom: 30,
-    width: 140,  
+    width: 140,
     height: 140,
-    resizeMode: 'contain', // Mantiene la proporción de la imagen
+    resizeMode: 'contain',
   },
   title: {
     fontSize: 32,
@@ -247,11 +269,10 @@ const styles = StyleSheet.create({
     height: 50,
     color: '#FFF',
   },
-  // Estilos agregados para el mensaje de error
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 59, 48, 0.1)', // Fondo rojo muy suave
+    backgroundColor: 'rgba(255, 59, 48, 0.1)',
     padding: 10,
     borderRadius: 8,
     marginBottom: 15,
