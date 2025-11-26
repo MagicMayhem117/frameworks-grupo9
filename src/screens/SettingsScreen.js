@@ -13,7 +13,7 @@ import { NotificationManager } from '../services/NotificationManager';
 const SettingsScreen = () => {
   const navigation = useNavigation();
   const [dailyNotifications, setDailyNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  // Eliminado: const [darkMode, setDarkMode] = useState(false);
 
   const { email } = useUser();
   const [usuario, setUsuario] = useState(null);
@@ -86,16 +86,17 @@ const SettingsScreen = () => {
           onValueChange={toggleNotifications} // <--- CAMBIO: Usamos la nueva función toggleNotifications
         />
       </View>
-      <View style={styles.preferenceRow}>
-        <Text style={styles.preferenceText}>Modo Oscuro</Text>
-        <Switch value={darkMode} onValueChange={setDarkMode} />
-      </View>
+
+
 
       {/* Soporte */}
       <Text style={styles.sectionTitle}>Soporte</Text>
 
-      <TouchableOpacity style={styles.supportRow}>
-        <Text style={styles.preferenceText}>Ayuda y FAQ</Text>
+      <TouchableOpacity
+        style={styles.supportRow}
+        onPress={() => navigation.navigate('SupportScreen')}
+      >
+        <Text style={styles.preferenceText}>Ayuda</Text>
       </TouchableOpacity>
 
       {/* Cerrar sesión */}

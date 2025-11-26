@@ -15,6 +15,7 @@ import RachaScreen from './src/screens/RachaScreen';
 import MonthlyShareScreen from './src/screens/MonthlyShareScreen';
 import ActivityDetailScreen from './src/screens/ActivityDetailScreen';
 import FriendProfileScreen from './src/screens/FriendProfileScreen';
+import SupportScreen from './src/screens/SupportScreen';
 
 import { StreakProvider } from './src/context/StreakContext';
 import StreakHeader from './src/components/StreakHeader';
@@ -118,6 +119,11 @@ const App = () => {
                 <Stack.Screen
                   name="EditProfileScreen"
                   component={EditProfileScreen}
+                  options={{ headerShown: false }}
+                />
+                <Stack.Screen
+                  name="SupportScreen"
+                  component={SupportScreen}
                   options={{ headerShown: false }}
                 />
               </>
