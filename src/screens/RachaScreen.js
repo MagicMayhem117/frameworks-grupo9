@@ -37,6 +37,66 @@ export default function RachaScreen({ navigation }) {
   // Ref inicializado en null
   const viewShotRef = useRef(null);
 
+  const getStreakTitle = (day) => {
+    // 1. Mensajes especificos para dias clave
+    const specificMessages = {
+      1: "¡Primer día! El fuego acaba de encenderse 🔥",
+      2: "¡Día 2 y ya estás de vuelta! Esto empieza a oler a compromiso",
+      3: "¡Estás en llamas! Cuidado que quema",
+      4: "Ya no es casualidad, ¿eh?",
+      5: "¡Medio camino a la semana! No te relajes ahora",
+      6: "Tus amigos ya están sospechando que eres un robot",
+      7: "¡SEMANA COMPLETA! Bienvenido al club de los que no abandonan 🏆",
+      8: "La llama ya no se apaga ni con agua",
+      9: "Estás a un paso de que te enviemos flores",
+      10: "Ya puedes presumirlo en el grupo familiar",
+      14: "¡2 SEMANAS! Tu racha ya tiene más compromiso que la mayoría de las relaciones",
+      15: "Mitad de mes sin fallar. Eres un ejemplo tóxico de disciplina",
+      20: "Tu racha ya tiene edad para manejar",
+      25: "¡Tu fuerza de voluntad ya da miedo!",
+      30: "¡UN MES EN LLAMAS!",
+      40: "Esto ya no es una racha, es un estilo de vida",
+      45: "Hasta tu abuela está orgullosa (y un poco preocupada)",
+      50: "Eres la persona que los demás usan de excusa para no intentarlo",
+      60: "Dos meses seguidos. Tu racha ya paga impuestos",
+      70: "Tu fuerza de voluntad tiene más experiencia que muchos empleados",
+      80: "Ya no es disciplina, es obsesión (y nos encanta)",
+      90: "¡Tres meses sin fallar! Eres básicamente un monje con celular",
+      99: "Mañana será legendario… No nos falles",
+      100: "¡Esto ya merece un documental de Netflix!",
+      123: "Tu racha ya sabe caminar y decir mamá",
+      150: "Tu compromiso asusta a la gente normal",
+      200: "Eres la razón por la que los demás se sienten mal consigo mismos",
+      250: "Tu racha ya tiene más estabilidad que el mercado cripto",
+      300: "¡Diez meses seguidos! Eres inmortal",
+      365: "¡UN AÑO EN LLAMAS! Eres leyenda.",
+      400: "Tu racha ya tiene más experiencia que tú en muchas cosas",
+      500: "Esto ya no es humano. ¿Eres un bot?",
+      666: "El número de la bestia. Tu dedicación da miedo literal",
+      730: "¡2 AÑOS! Tu racha es legendaria",
+      1000: "¡MIL DÍAS! Esto merece una estatua."
+    };
+
+    if (specificMessages[day]) {
+      return specificMessages[day];
+    }
+
+    // 2. Mensajes aleatorios para los días intermedios
+    const randomMessages = [
+      "Tu racha te mira raro si hoy no apareces",
+      "Tu yo del futuro te está aplaudiendo ahora mismo",
+      "Hay gente que lleva menos tiempo en su trabajo que tú en esta racha",
+      "Tu racha está en llamas",
+      "¡Estás en llamas!",
+      "Si tu racha fuera una planta, ya sería un árbol antiguo",
+      "Tu dedicación debería tener su propio himno nacional"
+    ];
+
+    // Seleccionamos basado en el número del día para que sea consistente
+    // (Ej: el dia 11 siempre mostrara el mismo mensaje, no cambiara al azar cada vez que abras)
+    return randomMessages[day % randomMessages.length];
+  };
+
   // 3. Cargar datos desde Firebase
   useEffect(() => {
     const fetchStreak = async () => {
@@ -166,6 +226,7 @@ export default function RachaScreen({ navigation }) {
             <>
               <Text style={styles.streakNumber}>{streak}</Text>
               <Text style={styles.streakLabel}>Días de racha</Text>
+              <Text style={styles.motivation}>{getStreakTitle(streak)}</Text>
             </>
           )}
         </View>
@@ -262,6 +323,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
     letterSpacing: 0.5,
     opacity: 0.9,
+  },
+  motivation: {
+    fontSize: 36,
+    color: '#f0f4ef',
+    fontWeight: '600',
+    marginTop: 20,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
   footer: {
     paddingHorizontal: 30,
